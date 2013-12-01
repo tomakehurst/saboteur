@@ -13,7 +13,7 @@ class TestCommandBuilders(unittest.TestCase):
 			'to_port': 80,
 			'protocol': 'TCP'
 		}
-		self.assertEqual(to_shell_command('add', params), 'iptables -A INPUT -p TCP -j DROP --dport 80')
+		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 80')
 
 
 	def test_isolate_webserver_delete(self):
@@ -25,7 +25,7 @@ class TestCommandBuilders(unittest.TestCase):
       		'to_port': 81,
       		'protocol': "TCP"
       	}
-		self.assertEqual(to_shell_command('delete', params), 'iptables -D INPUT -p TCP -j DROP --dport 81')
+		self.assertEqual(to_shell_command('delete', params), 'sudo /sbin/iptables -D INPUT -p TCP -j DROP --dport 81')
 		
 	def test_isolate_udp_server(self):
 		params={
@@ -36,7 +36,7 @@ class TestCommandBuilders(unittest.TestCase):
       		'to_port': 8111,
       		'protocol': "UDP"
       	}
-		self.assertEqual(to_shell_command('add', params), 'iptables -A INPUT -p UDP -j DROP --dport 8111')
+		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A INPUT -p UDP -j DROP --dport 8111')
 		
 	def test_webserver_shut_down(self):
 		params={
@@ -47,7 +47,7 @@ class TestCommandBuilders(unittest.TestCase):
       		'to_port': 8080,
       		'protocol': "TCP"
       	}
-		self.assertEqual(to_shell_command('add', params), 'iptables -A INPUT -p TCP -j REJECT --dport 8080')
+		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A INPUT -p TCP -j REJECT --dport 8080')
 		
 	def test_client_dependency_unreachable(self):
 		params={
@@ -58,7 +58,7 @@ class TestCommandBuilders(unittest.TestCase):
       		'to_port': 443,
       		'protocol': "TCP"
       	}
-		self.assertEqual(to_shell_command('add', params), 'iptables -A OUTPUT -p TCP -j DROP --dport 443 -d my.dest.host.com')
+		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP --dport 443 -d my.dest.host.com')
 
 
 

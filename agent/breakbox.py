@@ -8,7 +8,7 @@ ACTIONS={ 'add': '-A',  'delete': '-D' }
 FAULT_TYPES={ "NETWORK_FAILURE": "DROP", "SERVICE_FAILURE": "REJECT" }
 
 def to_shell_command(action, parameters):
-	command='iptables ' + ACTIONS[action] + " " + DIRECTIONS[parameters['direction']] + " " + "-p " + parameters['protocol'] + " " + "-j " + FAULT_TYPES[parameters['type']] + " " + "--dport " + str(parameters['to_port'])
+	command='sudo /sbin/iptables ' + ACTIONS[action] + " " + DIRECTIONS[parameters['direction']] + " " + "-p " + parameters['protocol'] + " " + "-j " + FAULT_TYPES[parameters['type']] + " " + "--dport " + str(parameters['to_port'])
 	if parameters.has_key('to'):
 		command += ' -d ' + parameters['to']
 	return command
@@ -20,10 +20,13 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		length = int(self.headers.getheader('content-length'))
 		params_json=self.rfile.read(length)
 		params=json.loads(params_json)
+		
 		print("Received: " + params_json)
+		command=to_shell_command('add', params)
+		print("Calling: " + command)
+		call(command, shell=True)
+		
 		self.send_response(200)
-		self.end_headers()
-		self.wfile.write('')
 		
 def run_server():
     BaseHTTPServer.test(BreakboxHTTPRequestHandler, BaseHTTPServer.HTTPServer)
