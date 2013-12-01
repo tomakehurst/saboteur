@@ -1,0 +1,16 @@
+*.iml
+**/*.iml
+*.ipr
+**/*.ipr
+*.iws
+**/*.iws
+.idea
+
+.project
+.classes
+.settings
+
+**/.vagrant
+
+*.pyc
+**/*.pyc
