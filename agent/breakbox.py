@@ -28,6 +28,11 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 		self.send_response(200)
 		
+	def do_DELETE(self):
+		command='sudo /sbin/service iptables restart; sudo /sbin/iptables -L'
+		print("Calling: " + command)
+		call(command, shell=True)
+		
 def run_server():
     BaseHTTPServer.test(BreakboxHTTPRequestHandler, BaseHTTPServer.HTTPServer)
 
