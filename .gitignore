@@ -14,3 +14,6 @@
 
 *.pyc
 **/*.pyc
+
+**/build
+**/.gradle
