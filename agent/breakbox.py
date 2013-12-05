@@ -5,12 +5,17 @@ from subprocess import call
 
 DIRECTIONS={ 'IN': 'INPUT', 'OUT': 'OUTPUT' }
 ACTIONS={ 'add': '-A',  'delete': '-D' }
-FAULT_TYPES={ "NETWORK_FAILURE": "DROP", "SERVICE_FAILURE": "REJECT" }
+FAULT_TYPES={ "NETWORK_FAILURE": "DROP", "SERVICE_FAILURE": "REJECT", 'EXPIRE_ESTABLISHED_CONNECTIONS': 'DROP' }
+
 
 def to_shell_command(action, parameters):
 	command='sudo /sbin/iptables ' + ACTIONS[action] + " " + DIRECTIONS[parameters['direction']] + " " + "-p " + parameters['protocol'] + " " + "-j " + FAULT_TYPES[parameters['type']] + " " + "--dport " + str(parameters['to_port'])
 	if parameters.has_key('to'):
 		command += ' -d ' + parameters['to']
+		
+	if parameters['type'] == 'EXPIRE_ESTABLISHED_CONNECTIONS':
+		command += ' -m conntrack --ctstate ESTABLISHED'
+		
 	return command
 	
 	

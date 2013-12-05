@@ -32,7 +32,6 @@ class TestCommandBuilders(unittest.TestCase):
       		'name': "isolate-streaming-server",
       		'type': "NETWORK_FAILURE",
       		'direction': "IN",
-      		'from': "ALL",
       		'to_port': 8111,
       		'protocol': "UDP"
       	}
@@ -43,7 +42,6 @@ class TestCommandBuilders(unittest.TestCase):
       		'name': "web-server-down",
       		'type': "SERVICE_FAILURE",
       		'direction': "IN",
-      		'from': "ALL",
       		'to_port': 8080,
       		'protocol': "TCP"
       	}
@@ -59,8 +57,28 @@ class TestCommandBuilders(unittest.TestCase):
       		'protocol': "TCP"
       	}
 		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP --dport 443 -d my.dest.host.com')
+		
+	def test_client_dependency_unreachable(self):
+		params={
+      		'name': "connectivity-to-dependency-down",
+      		'type': "NETWORK_FAILURE",
+      		'direction': "OUT",
+			'to': 'my.dest.host.com',
+      		'to_port': 443,
+      		'protocol': "TCP"
+      	}
+		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP --dport 443 -d my.dest.host.com')
 
-
+	def test_emulate_firewall_tcp_expire(self):
+		params={
+			'name': 'firewall-expired-connections',
+			'type': 'EXPIRE_ESTABLISHED_CONNECTIONS',
+			'direction': 'OUT',
+			'to_port': 9042,
+			'protocol': 'TCP'
+		}
+		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP --dport 9042 -m conntrack --ctstate ESTABLISHED')
+		
 
 if __name__ == '__main__':
     unittest.main()
