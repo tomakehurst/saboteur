@@ -9,14 +9,26 @@ FAULT_TYPES={ "NETWORK_FAILURE": "DROP", "SERVICE_FAILURE": "REJECT", 'EXPIRE_ES
 
 
 def to_shell_command(action, parameters):
-	command='sudo /sbin/iptables ' + ACTIONS[action] + " " + DIRECTIONS[parameters['direction']] + " " + "-p " + parameters['protocol'] + " " + "-j " + FAULT_TYPES[parameters['type']] + " " + "--dport " + str(parameters['to_port'])
+	command='sudo /sbin/iptables ' + ACTIONS[action] + " " + DIRECTIONS[parameters['direction']] + " " + "-p " + (parameters.get('protocol') or "TCP") + " " + "-j " + FAULT_TYPES[parameters['type']]
+	
+	if parameters.has_key('from'):
+		command += ' -s ' + parameters['from']
+	
 	if parameters.has_key('to'):
 		command += ' -d ' + parameters['to']
+		
+	if parameters.has_key('to_port'):
+		command += " --dport " + str(parameters['to_port'])
 		
 	if parameters['type'] == 'EXPIRE_ESTABLISHED_CONNECTIONS':
 		command += ' -m conntrack --ctstate ESTABLISHED'
 		
 	return command
+	
+def get_established_connection_ports(parameters):
+    # ss -no state established '( sport = :8080 or dport = :8080 )'  | tail -n +2 | cut -d ':' -f5 - local ports
+	# ss -no state established '( sport = :8080 or dport = :8080 )'  | tail -n +2 | cut -d ':' -f9 - remote ports
+	return []
 	
 	
 class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -33,10 +45,13 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 		self.send_response(200)
 		
+		
 	def do_DELETE(self):
 		command='sudo /sbin/service iptables restart; sudo /sbin/iptables -L'
 		print("Calling: " + command)
 		call(command, shell=True)
+		
+		self.send_response(200)
 		
 def run_server():
     BaseHTTPServer.test(BreakboxHTTPRequestHandler, BaseHTTPServer.HTTPServer)

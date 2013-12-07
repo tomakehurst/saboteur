@@ -9,7 +9,6 @@ class TestCommandBuilders(unittest.TestCase):
 			'name': 'isolate-web-server',
 			'type': 'NETWORK_FAILURE',
 			'direction': 'IN',
-			'from': 'ALL',
 			'to_port': 80,
 			'protocol': 'TCP'
 		}
@@ -21,9 +20,7 @@ class TestCommandBuilders(unittest.TestCase):
       		'name': "isolate-web-server",
       		'type': "NETWORK_FAILURE",
       		'direction': "IN",
-      		'from': "ALL",
-      		'to_port': 81,
-      		'protocol': "TCP"
+      		'to_port': 81
       	}
 		self.assertEqual(to_shell_command('delete', params), 'sudo /sbin/iptables -D INPUT -p TCP -j DROP --dport 81')
 		
@@ -56,19 +53,18 @@ class TestCommandBuilders(unittest.TestCase):
       		'to_port': 443,
       		'protocol': "TCP"
       	}
-		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP --dport 443 -d my.dest.host.com')
-		
-	def test_client_dependency_unreachable(self):
+		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP -d my.dest.host.com --dport 443')
+
+	def test_specifying_source(self):
 		params={
-      		'name': "connectivity-to-dependency-down",
+      		'name': "network-failure-by-source-host",
       		'type': "NETWORK_FAILURE",
-      		'direction': "OUT",
-			'to': 'my.dest.host.com',
-      		'to_port': 443,
+      		'direction': "IN",
+			'from': 'my.source.host.com',
       		'protocol': "TCP"
       	}
-		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP --dport 443 -d my.dest.host.com')
-
+		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A INPUT -p TCP -j DROP -s my.source.host.com')
+	
 	def test_emulate_firewall_tcp_expire(self):
 		params={
 			'name': 'firewall-expired-connections',

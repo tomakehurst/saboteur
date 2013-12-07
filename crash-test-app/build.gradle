@@ -25,6 +25,7 @@ dependencies {
 	compile "com.yammer.dropwizard:dropwizard-core:0.6.2"
 	compile "com.yammer.dropwizard:dropwizard-client:0.6.2"
 	compile "com.yammer.dropwizard:dropwizard-db:0.6.2"
+	compile "com.github.tomakehurst:wiremock:1.37"
 
 	testCompile "junit:junit:4.11"
 }
