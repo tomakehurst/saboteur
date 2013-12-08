@@ -65,29 +65,29 @@ class TestCommandBuilders(unittest.TestCase):
       	}
 		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A INPUT -p TCP -j DROP -s my.source.host.com')
 	
-	def test_emulate_firewall_tcp_expire(self):
-		params={
-			'name': 'firewall-expired-connections',
-			'type': 'EXPIRE_ESTABLISHED_CONNECTIONS',
-			'direction': 'OUT',
-			'to_port': 9042,
-			'protocol': 'TCP'
-		}
-		self.assertEqual(to_shell_command('add', params), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP --dport 9042 -m conntrack --ctstate ESTABLISHED')
-		
-
 	example_ss_output="""Recv-Q Send-Q                                            Local Address:Port                                              Peer Address:Port 
 0      0                                           ::ffff:192.168.2.11:8080                                       ::ffff:192.168.2.12:52079 
 0      0                                           ::ffff:192.168.2.11:8080                                       ::ffff:192.168.2.12:52080 
 0      0                                           ::ffff:192.168.2.11:8080                                       ::ffff:192.168.2.12:52078 
 """
-
+	
+	def test_emulate_firewall_tcp_expire(self):
+		shell=MockShell(next_result=self.example_ss_output)
+		params={
+			'name': 'firewall-expired-connections',
+			'type': 'EXPIRE_ESTABLISHED_CONNECTIONS',
+			'direction': 'OUT',
+			'to_port': 8080,
+			'protocol': 'TCP'
+		}
+		self.assertEqual(to_shell_command('add', params, shell), 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP --dport 8080 --match multiport --sports 52079,52080,52078')
+		
 	def test_correctly_parses_established_ports(self):
 		shell=MockShell(next_result=self.example_ss_output)
 		params={
 			'to_port': 8080
 		}
-		self.assertEqual(get_established_connection_ports(params, shell), [52079, 52080, 52078])
+		self.assertEqual(get_established_connection_ports(params, shell), ['52079', '52080', '52078'])
 
 
 class MockShell:

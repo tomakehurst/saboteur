@@ -3,12 +3,20 @@ import json
 import BaseHTTPServer
 from subprocess import call
 
+class Shell:
+	
+	def execute_and_return_stdout(self, command):
+		return os.popen(command).read()
+		
+	def execute_and_return_status(self, command):
+		return call(command, shell=True)
+
+
 DIRECTIONS={ 'IN': 'INPUT', 'OUT': 'OUTPUT' }
 ACTIONS={ 'add': '-A',  'delete': '-D' }
 FAULT_TYPES={ "NETWORK_FAILURE": "DROP", "SERVICE_FAILURE": "REJECT", 'EXPIRE_ESTABLISHED_CONNECTIONS': 'DROP' }
 
-
-def to_shell_command(action, parameters):
+def to_shell_command(action, parameters, shell=Shell()):
 	command='sudo /sbin/iptables ' + ACTIONS[action] + " " + DIRECTIONS[parameters['direction']] + " " + "-p " + (parameters.get('protocol') or "TCP") + " " + "-j " + FAULT_TYPES[parameters['type']]
 	
 	if parameters.has_key('from'):
@@ -21,27 +29,21 @@ def to_shell_command(action, parameters):
 		command += " --dport " + str(parameters['to_port'])
 		
 	if parameters['type'] == 'EXPIRE_ESTABLISHED_CONNECTIONS':
-		command += ' -m conntrack --ctstate ESTABLISHED'
+		established_ports=get_established_connection_ports(parameters, shell)
+		command += ' --match multiport --sports ' + ','.join(established_ports)
 		
 	return command
 	
 def get_established_connection_ports(parameters, shell):
-    # ss -no state established '( sport = :8080 or dport = :8080 )'  | tail -n +2 | cut -d ':' -f5 - local ports
-	# ss -no state established '( sport = :8080 or dport = :8080 )'  | tail -n +2 | cut -d ':' -f9 - remote ports
 	to_port=parameters["to_port"]
 	ss_output=shell.execute_and_return_stdout("ss -no state established '( sport = :{0} or dport = :{0} )'".format(to_port))
 	lines=ss_output.split('\n')
 	lines.pop(0)
 	lines.pop(-1)
-	return filter(lambda port: port != to_port, [int(line.split(':')[4].strip()) for line in lines] + [int(line.split(':')[8].strip()) for line in lines])
+	return filter(lambda port: port != str(to_port), \
+		[line.split(':')[4].strip() for line in lines] +\
+		[line.split(':')[8].strip() for line in lines])
 	
-class Shell:
-	
-	def execute_and_return_stdout(self, command):
-		return os.popen(command).read()
-		
-	def execute_and_return_status(self, command):
-		return call(command, shell=True)
 	
 class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
