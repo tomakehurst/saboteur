@@ -5,6 +5,6 @@ http:
 wireMockHost: 192.168.2.11
 
 clientConfig:
-  connectionTimeout: 30s
-  timeout: 1m
-  keepAlive: 1m
+  connectionTimeout: 10s
+  timeout: 30m
+  keepAlive: 10m
