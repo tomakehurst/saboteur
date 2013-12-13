@@ -27,7 +27,8 @@ public class CrashTestResource {
         this.wireMockHost = wireMockHost;
 
         wireMock.resetMappings();
-        wireMock.register(get(urlEqualTo("/something")).willReturn(aResponse().withStatus(200).withBody("Success")));
+        wireMock.register(get(urlEqualTo("/something")).willReturn(
+                aResponse().withStatus(200).withBody("Success").withFixedDelay(100)));
     }
 
     @GET
