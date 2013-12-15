@@ -69,7 +69,7 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         
         
     def do_DELETE(self):
-        command='sudo /sbin/iptables -F'
+        command=IPTABLES_COMMAND + ' -F'
         self.shell.execute_and_return_status(command)
         
         self.send_response(200)

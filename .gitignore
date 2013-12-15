@@ -5,6 +5,7 @@
 *.iws
 **/*.iws
 .idea
+**/.idea
 
 .project
 .classes
@@ -17,3 +18,8 @@
 
 **/build
 **/.gradle
+
+**/target
+
+**/.nrepl-port
+**/.lein-repl-history
