@@ -2,13 +2,20 @@
   (:require [clojure.string :refer [upper-case]]
             [breakbox.http :refer :all]))
 
-(defn service [protocol port & hosts]
+(defn- config [type protocol port hosts]
   {
+    :type     type
     :protocol protocol
     :port     port
-    :hosts    (apply vector hosts)
+    :hosts    hosts
   }
 )
+
+(defn service [protocol port & hosts]
+  (config :service protocol port (apply vector hosts)))
+
+(defn client [protocol port & hosts]
+  (config :client protocol port (apply vector hosts)))
 
 (defn- to-const [keyword]
   (-> keyword
@@ -17,16 +24,17 @@
     (.replace "-" "_")))
 
 
-(defn fault-command [fault-name service type additional-arg-map]
+(defn fault-command [fault-name config type additional-arg-map]
   (conj {
       :name fault-name
       :type (to-const type)
-      :direction "IN"
-      :to_port (:port service)
-      :protocol (to-const (:protocol service))
+      :direction ((:type config) { :service "IN" :client "OUT" })
+      :to_port (:port config)
+      :protocol (to-const (:protocol config))
     }
     additional-arg-map)
 )
+
 
 
 (defn add-fault [fault-name service type & additional-args]
