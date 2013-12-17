@@ -23,3 +23,5 @@
 
 **/.nrepl-port
 **/.lein-repl-history
+
+clojure-client/pom.xml
