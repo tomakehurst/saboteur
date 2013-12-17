@@ -1,7 +1,6 @@
 (ns breakbox.client-test
   (:require [breakbox.client :refer :all]
             [breakbox.http :refer :all]
-            [clojure.data.json :as json]
             [midje.sweet :refer :all]))
 
 (def test-service (service :tcp 3000 "host1.myapp.com" "host2.myapp.com"))
