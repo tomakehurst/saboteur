@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import BaseHTTPServer
 from subprocess import call
@@ -79,4 +80,6 @@ def run_server():
 
 
 if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        sys.argv.append(6660)
     run_server()

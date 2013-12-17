@@ -10,7 +10,7 @@
   }
 )
 
-(defn to-const [keyword]
+(defn- to-const [keyword]
   (-> keyword
     name
     upper-case
