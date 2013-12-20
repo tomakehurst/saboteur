@@ -37,13 +37,13 @@
 
 
 
-(defn add-fault [fault-name service type & additional-args]
-  (doseq [host (:hosts service)]
+(defn add-fault [fault-name config type & additional-args]
+  (doseq [host (:hosts config)]
     (let [url (str "http://" host ":6660")]
-      (post url (fault-command fault-name service type (apply hash-map additional-args))))))
+      (post url (fault-command fault-name config type (apply hash-map additional-args))))))
 
 
-(defn reset [service]
-  (doseq [host (:hosts service)]
+(defn reset [config]
+  (doseq [host (:hosts config)]
      (let [url (str "http://" host ":6660")]
        (delete url))))
