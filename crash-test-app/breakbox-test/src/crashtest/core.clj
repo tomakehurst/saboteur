@@ -7,13 +7,14 @@
 
 (def metrics (new MetricRegistry))
 
-(def ^:dynamic *pool* (Executors/newFixedThreadPool 10))
-
 (defn dothreads! [f & {thread-count :threads
                        exec-count :times
                        :or {thread-count 1 exec-count 1}}]
-  (let [tasks (repeat thread-count f)]
-    (.invokeAll *pool* tasks)))
+  (printf "Running %d times in %d threads\n" exec-count thread-count)
+  (let [pool (Executors/newFixedThreadPool thread-count)
+        tasks (repeat exec-count f)
+        task-futures (.invokeAll pool tasks)]
+    task-futures))
 
 (defn wait-for-completion [futures]
   (doseq [fut futures]
@@ -39,7 +40,6 @@
   (let [uri (uritemplate uri-template (apply hash-map uri-params))
         timer (create-timer "get" uri-template)
         timer-context (.time timer)
-        response (http/get uri options)]
+        response @(http/get uri options)]
     (.stop timer-context)
     response))
-

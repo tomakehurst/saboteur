@@ -6,9 +6,12 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,6 +21,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 @Path("/")
 public class CrashTestResource {
+
+    private static final Logger log = LoggerFactory.getLogger(CrashTestResource.class);
 
     private final HttpClient httpClient;
     private final String wireMockHost;
@@ -38,14 +43,15 @@ public class CrashTestResource {
 
     @GET
     @Path("no-connect-timeout")
-    public String httpClientWithLongConnectTimeout() {
+    public Response httpClientWithLongConnectTimeout() {
         HttpGet get = getSomething();
         HttpResponse response;
         try {
             response = httpClient.execute(get);
-            return EntityUtils.toString(response.getEntity());
+            return Response.ok(EntityUtils.toString(response.getEntity())).build();
         } catch (IOException ioe) {
-            return renderFailureMessage(ioe);
+            log.error("Failed to GET " + get.getURI(), ioe);
+            return Response.serverError().entity(renderFailureMessage(ioe)).build();
         } finally {
             get.releaseConnection();
         }

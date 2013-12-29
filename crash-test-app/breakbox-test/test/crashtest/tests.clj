@@ -6,21 +6,29 @@
 
 (def crash-test-http-dependency (client :tcp 8080 "192.168.2.12"))
 
-(def something-url "http://192.168.2.12:8080/something")
+(defn reset-breakbox-fixture [f]
+  (reset crash-test-http-dependency)
+  (f)
+  (reset crash-test-http-dependency))
 
-(defn get-something []
-  (timed-get {} something-url))
+(use-fixtures :each reset-breakbox-fixture)
 
-(deftest get-tags-should-not-exceed-5s-under-network-failure
+(def faulty-resource-url "http://192.168.2.12:8080/no-connect-timeout")
+
+(defn get-faulty-resource []
+  (timed-get { :timeout 2000 } faulty-resource-url))
+
+
+
+(deftest get-should-not-exceed-1s
   (add-fault "http-service-network-failure" crash-test-http-dependency :network-failure)
+
   (wait-for-completion
-    (dothreads! get-something :threads 10 :times 100))
+    (dothreads! get-faulty-resource :threads 5 :times 100))
 
-  (println (get-timer-names))
-
-  (let [something-snapshot (timer-snapshot "get" something-url)
+  (let [something-snapshot (timer-snapshot "get" faulty-resource-url)
         percentile95 (to-millis (.get95thPercentile something-snapshot))]
-    (is (< percentile95 5000))
+    (is (< percentile95 1000))
     (is (> percentile95 0))))
 
 
