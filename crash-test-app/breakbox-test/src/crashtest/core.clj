@@ -1,5 +1,5 @@
 (ns crashtest.core
-  (:require [breakbox.client :refer :all]
+  (:require [breakbox.client :as breakbox]
             [uritemplate-clj.core :refer :all]
             [org.httpkit.client :as http])
   (:import  [com.codahale.metrics MetricRegistry])
@@ -43,3 +43,9 @@
         response @(http/get uri options)]
     (.stop timer-context)
     response))
+
+(defn reset-breakbox [config]
+  (fn [f]
+    (breakbox/reset config)
+    (f)
+    (breakbox/reset config)))
