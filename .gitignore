@@ -25,3 +25,8 @@
 **/.lein-repl-history
 
 clojure-client/pom.xml
+
+
+.lein*
+**/.lein*
+**/.nrepl*

@@ -11,7 +11,7 @@ buildscript {
 apply plugin: 'java'
 apply plugin: 'fatjar'
 apply plugin: 'idea'
-apply plugin:'application'
+apply plugin: 'application'
 
 sourceCompatibility = 1.7
 group = 'com.github.tomakehurst'
@@ -40,3 +40,7 @@ fatJar {
 }
 
 mainClassName = "com.github.tomakehurst.crashtest.CrashTestService"
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.8'
+}

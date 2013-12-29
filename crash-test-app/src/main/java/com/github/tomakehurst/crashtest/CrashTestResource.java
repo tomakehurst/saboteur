@@ -37,9 +37,24 @@ public class CrashTestResource {
     }
 
     @GET
-    @Path("http-client-1")
+    @Path("no-connect-timeout")
+    public String httpClientWithLongConnectTimeout() {
+        HttpGet get = getSomething();
+        HttpResponse response;
+        try {
+            response = httpClient.execute(get);
+            return EntityUtils.toString(response.getEntity());
+        } catch (IOException ioe) {
+            return renderFailureMessage(ioe);
+        } finally {
+            get.releaseConnection();
+        }
+    }
+
+    @GET
+    @Path("bad-http-client-error-handling")
     public String httpClientWithBadErrorHandling() {
-        HttpGet get = new HttpGet("http://" + wireMockHost + ":8080/something");
+        HttpGet get = getSomething();
         HttpResponse response;
         try {
             response = httpClient.execute(get);
@@ -53,6 +68,17 @@ public class CrashTestResource {
             ioe.printStackTrace(pw);
             return "Failure:\n" + stringWriter.toString();
         }
+    }
+
+    private String renderFailureMessage(IOException ioe) {
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter pw = new PrintWriter(stringWriter);
+        ioe.printStackTrace(pw);
+        return "Failure:\n" + stringWriter.toString();
+    }
+
+    private HttpGet getSomething() {
+        return new HttpGet("http://" + wireMockHost + ":8080/something");
     }
 
 }
