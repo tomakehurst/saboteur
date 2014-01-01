@@ -37,6 +37,13 @@
 (defn to-millis [nanos]
   (.toMillis TimeUnit/NANOSECONDS nanos))
 
+(defn convert-units [nanos unit]
+  (case unit
+    :seconds      (.toSeconds TimeUnit/NANOSECONDS nanos)
+    :milliseconds (.toMillis TimeUnit/NANOSECONDS nanos)
+    :microseconds (.toMicros TimeUnit/NANOSECONDS nanos)
+    nanos))
+
 (defn timed-get [options uri-template & uri-params]
   (let [uri (uritemplate uri-template (apply hash-map uri-params))
         timer (create-timer "get" uri-template)
@@ -51,7 +58,19 @@
     (f)
     (breakbox/reset config)))
 
+(defn- percentile-str [percentile]
+  (let [suffix (case (mod percentile 10)
+                 1 "st"
+                 2 "nd"
+                 3 "rd"
+                 "th")]
+    (str percentile suffix " percentile")))
 
-(defn assert-percentile [quantile snapshot operator value]
-  (let [percentile-val (to-millis (.getValue snapshot (double (/ quantile 100))))]
-    (is (operator percentile-val value))))
+(defn assert-percentile [quantile snapshot operator value unit]
+  (let [percentile-val (convert-units (.getValue snapshot (double (/ quantile 100))) unit)]
+    (if (operator percentile-val value)
+      (do-report { :type :pass, :message "OK", :expected value, :actual percentile-val })
+      (do-report { :type :fail,
+                   :message (percentile-str quantile),
+                   :expected (str value " " (name unit)),
+                   :actual (str percentile-val " " (name unit)) }))))

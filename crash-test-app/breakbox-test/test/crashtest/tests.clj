@@ -18,8 +18,8 @@
   (wait-for-completion (dothreads! get-faulty-resource :threads 5 :times 100))
 
   (let [faulty-resource-timer (timer-snapshot "get" faulty-resource-url)]
-    (assert-percentile 50 faulty-resource-timer < 700)
-    (assert-percentile 95 faulty-resource-timer < 1000)
-    (assert-percentile 95 faulty-resource-timer > 0)))
+    (assert-percentile 50 faulty-resource-timer < 700000 :microseconds)
+    (assert-percentile 95 faulty-resource-timer < 1000 :milliseconds)
+    (assert-percentile 95 faulty-resource-timer > 0 :milliseconds)))
 
 
