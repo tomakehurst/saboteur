@@ -1,7 +1,8 @@
 (ns crashtest.core
   (:require [breakbox.client :as breakbox]
             [uritemplate-clj.core :refer :all]
-            [org.httpkit.client :as http])
+            [org.httpkit.client :as http]
+            [clojure.test :refer :all])
   (:import  [com.codahale.metrics MetricRegistry])
   (:import  [java.util.concurrent Executors TimeUnit]))
 
@@ -49,3 +50,8 @@
     (breakbox/reset config)
     (f)
     (breakbox/reset config)))
+
+
+(defn assert-percentile [quantile snapshot operator value]
+  (let [percentile-val (to-millis (.getValue snapshot (double (/ quantile 100))))]
+    (is (operator percentile-val value))))
