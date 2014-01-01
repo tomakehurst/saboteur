@@ -20,8 +20,8 @@
   (wait-for-completion
     (dothreads! get-faulty-resource :threads 5 :times 100))
 
-  (let [something-snapshot (timer-snapshot "get" faulty-resource-url)
-        percentile95 (to-millis (.get95thPercentile something-snapshot))]
+  (let [faulty-resource-timer-snapshot (timer-snapshot "get" faulty-resource-url)
+        percentile95 (to-millis (.get95thPercentile faulty-resource-timer-snapshot))]
     (is (< percentile95 1000))
     (is (> percentile95 0))))
 
