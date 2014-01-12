@@ -4,7 +4,7 @@ DAEMON=/usr/bin/breakbox-agent
 PIDFILE=/var/run/breakbox/agent.pid
 
 start_breakbox() {
-  nohup runuser - breakbox -s '/bin/sh' -c $DAEMON < /dev/null > /var/log/breakbox-agent.log 2>&1 &
+  nohup runuser - breakbox -s '/bin/sh' -c $DAEMON < /dev/null >> /var/log/breakbox-agent.log 2>&1 &
   PID=`ps x | grep $DAEMON | head -1 | awk '{print $1}'`
   if [ -z $PID ]; then
 	echo "Failed to start Breakbox agent"

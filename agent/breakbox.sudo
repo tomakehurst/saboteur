@@ -1,1 +1,1 @@
-breakbox  localhost=/sbin/iptables,/sbin/tc
+breakbox  ALL=NOPASSWD:/sbin/iptables*,/sbin/tc*
