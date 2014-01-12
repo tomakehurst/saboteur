@@ -1,0 +1,77 @@
+#!/usr/bin/env sh
+
+DAEMON=/usr/bin/breakbox-agent
+PIDFILE=/var/run/breakbox/agent.pid
+
+start_breakbox() {
+  nohup runuser - breakbox -s '/bin/sh' -c $DAEMON < /dev/null > /var/log/breakbox-agent.log 2>&1 &
+  PID=`ps x | grep $DAEMON | head -1 | awk '{print $1}'`
+  if [ -z $PID ]; then
+	echo "Failed to start Breakbox agent"
+    exit 1
+  fi
+
+  echo $PID > $PIDFILE
+  echo "Started Breakbox agent"
+}
+
+stop_breakbox() {
+  if [ ! -f $PIDFILE ]; then
+    echo "Breakbox agent wasn't running"
+	exit 7
+  fi
+
+  PID=`cat $PIDFILE`
+  if [ -z $PID ]; then
+	echo "Breakbox agent wasn't running"
+    RETVAL=7
+  else
+    kill $PID
+	RETVAL=0
+    echo "Stopped Breakbox agent"
+  fi
+
+  rm -f $PIDFILE
+  exit $RETVAL
+}
+
+breakbox_status() {
+  if [ ! -f $PIDFILE ]; then
+    echo "Breakbox agent not running"
+	exit 3
+  fi
+
+  PID=`cat $PIDFILE`
+  PIDS=`ps -p $PID | tail -n+2` 
+  if [ -z "$PIDS" ]; then
+	echo "Breakbox agent not running"
+	RETVAL=1
+  else
+	echo "Breakbox agent running: $PID"
+	RETVAL=0
+  fi
+
+  exit $RETVAL
+}
+
+case "$1" in
+  start)
+    start_breakbox
+	;;
+  stop)
+    stop_breakbox
+	;;
+  restart)
+    stop_breakbox
+	start_breakbox
+	;;
+  status)
+    breakbox_status
+    ;;
+  *)
+    echo "Usage: service breakbox {start|stop|restart|status}"
+	exit 3
+	;;
+esac
+
+exit 0
