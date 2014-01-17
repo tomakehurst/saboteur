@@ -114,6 +114,40 @@ class TestCommandBuilders(unittest.TestCase):
             'sudo /sbin/tc qdisc add dev vmnet8 root handle 1: prio',
             'sudo /sbin/tc qdisc add dev vmnet8 parent 1:3 handle 11: netem delay 160ms 12ms distribution normal',
             'sudo /sbin/tc filter add dev vmnet8 protocol ip parent 1:0 prio 3 u32 match ip sport 4411 0xffff flowid 1:3'])
+
+    def test_pareto_distributed_delay(self):
+        params={
+            'name': "pareto-distributed-delay",
+            'type': "DELAY",
+            'direction': "IN",
+            'to_port': 8822,
+            'delay': 350,
+            'variance': 50,
+            'distribution': 'pareto' }
+        self.shell.next_result='eth0'
+        run_shell_command('add', params, self.shell)
+        self.assertEqual(self.shell.commands, [
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 350ms 50ms distribution pareto',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 8822 0xffff flowid 1:3'])
+
+    def test_outbound_delay(self):
+        params={
+            'name': "outbound-delay",
+            'type': "DELAY",
+            'direction': "OUT",
+            'to_port': 8822,
+            'delay': 350,
+            'variance': 50,
+            'distribution': 'pareto' }
+        self.shell.next_result='eth0'
+        run_shell_command('add', params, self.shell)
+        self.assertEqual(self.shell.commands, [
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 350ms 50ms distribution pareto',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip dport 8822 0xffff flowid 1:3'])
                 
 
 class MockShell:
