@@ -63,11 +63,21 @@ def run_netem_commands(action, parameters, shell=Shell()):
     for interface in get_network_interface_names(shell):
         delay=str(parameters['delay'])
         variance=str(parameters['variance'])
-        distribution=parameters['distribution']
         port=str(parameters['to_port'])
         port_type={ 'IN': 'sport', 'OUT': 'dport' }[parameters['direction']]
+        
+        if parameters.has_key('distribution'):
+            distribution_part=' distribution ' + parameters['distribution']
+        else:
+            distribution_part=''
+            
+        if not parameters.has_key('distribution') and parameters.has_key('correlation'):
+            correlation_part=' ' + str(parameters['correlation']) + '%'
+        else:
+            correlation_part=''
+
         shell.execute_and_return_status('sudo /sbin/tc qdisc add dev ' + interface + ' root handle 1: prio')
-        shell.execute_and_return_status('sudo /sbin/tc qdisc add dev ' + interface + ' parent 1:3 handle 11: netem delay ' + delay + 'ms ' + variance + 'ms distribution ' + distribution)
+        shell.execute_and_return_status('sudo /sbin/tc qdisc add dev ' + interface + ' parent 1:3 handle 11: netem delay ' + delay + 'ms ' + variance + 'ms' + distribution_part + correlation_part)
         shell.execute_and_return_status('sudo /sbin/tc filter add dev ' + interface + ' protocol ip parent 1:0 prio 3 u32 match ip ' + port_type + ' ' + port + ' 0xffff flowid 1:3')
         
 class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
