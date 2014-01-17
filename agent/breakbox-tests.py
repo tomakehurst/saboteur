@@ -89,11 +89,32 @@ class TestCommandBuilders(unittest.TestCase):
         }
         run_shell_command('add', params, self.shell)
         self.assertEqual(self.shell.commands, [
-        	'sudo /sbin/iptables -A INPUT -p TCP -j ACCEPT --dport 3000 -m conntrack --ctstate NEW,ESTABLISHED',
-        	'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 3000',
-        	'echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose',
-			'echo 101 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established'])
-		
+            'sudo /sbin/iptables -A INPUT -p TCP -j ACCEPT --dport 3000 -m conntrack --ctstate NEW,ESTABLISHED',
+            'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 3000',
+            'echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose',
+            'echo 101 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established'])
+
+
+    def test_normally_distributed_delay(self):
+        params={
+            'name': "normally-distributed-delay",
+            'type': "DELAY",
+            'direction': "IN",
+            'to_port': 4411,
+            'delay': 160,
+            'variance': 12,
+            'distribution': 'normal' }
+        self.shell.next_result='eth0\nvmnet8'
+        run_shell_command('add', params, self.shell)
+        self.assertEqual(self.shell.commands, [
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 160ms 12ms distribution normal',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 4411 0xffff flowid 1:3',
+            'sudo /sbin/tc qdisc add dev vmnet8 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev vmnet8 parent 1:3 handle 11: netem delay 160ms 12ms distribution normal',
+            'sudo /sbin/tc filter add dev vmnet8 protocol ip parent 1:0 prio 3 u32 match ip sport 4411 0xffff flowid 1:3'])
+                
 
 class MockShell:
 
@@ -108,7 +129,7 @@ class MockShell:
         return self.next_result
         
     def execute_and_return_status(self, command):
-    	self.commands.append(command)
+        self.commands.append(command)
         self.last_command=command
         return self.next_status
 
