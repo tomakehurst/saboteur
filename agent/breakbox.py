@@ -36,8 +36,8 @@ def run_firewall_timeout_commands(action, parameters, shell=Shell()):
     drop_others_command=base_iptables_command(action, parameters, 'DROP')
     shell.execute_and_return_status(drop_others_command)
     if action == 'add':
-    	shell.execute_and_return_status('echo 0 > /proc/sys/net/netfilter/nf_conntrack_tcp_loose')
-        shell.execute_and_return_status('echo ' + str(parameters['timeout']) + ' > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
+    	shell.execute_and_return_status('echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose')
+        shell.execute_and_return_status('echo ' + str(parameters['timeout']) + ' | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
         
 
 def base_iptables_command(action, parameters, fault_type):

@@ -85,14 +85,14 @@ class TestCommandBuilders(unittest.TestCase):
             'direction': "IN",
             'to_port': 3000,
             'protocol': "TCP",
-            'timeout': 10
+            'timeout': 101
         }
         run_shell_command('add', params, self.shell)
         self.assertEqual(self.shell.commands, [
         	'sudo /sbin/iptables -A INPUT -p TCP -j ACCEPT --dport 3000 -m conntrack --ctstate NEW,ESTABLISHED',
         	'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 3000',
-        	'echo 0 > /proc/sys/net/netfilter/nf_conntrack_tcp_loose',
-			'echo 10 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established'])
+        	'echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose',
+			'echo 101 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established'])
 		
 
 class MockShell:

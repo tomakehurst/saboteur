@@ -1,1 +1,1 @@
-breakbox  ALL=NOPASSWD:/sbin/iptables*,/sbin/tc*
+breakbox  ALL=NOPASSWD:/sbin/iptables*,/sbin/tc*,/usr/bin/tee
