@@ -3,34 +3,31 @@
 import os
 import sys
 import json
-import shlex
 import BaseHTTPServer
 from subprocess import Popen, PIPE, call
 import logging
 
-
 class Shell:
     
     def execute(self, command):
-        logging.info(command)
-        args = shlex.split(command)
+        log.info(command)
 
         proc = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
         out, err = proc.communicate()
         exitcode = proc.returncode
         
-        logging.info('[' + str(exitcode) + ']')
+        log.info('[' + str(exitcode) + ']')
         if out:
-            logging.info(out)
+            log.info(out)
 
         if err:
-            logging.info(err)
+            log.info(err)
         
         return exitcode, out, err
         
     def execute_and_return_status(self, command):
         exit_code=call(command, shell=True)
-        logging.info('"' + command + '" returned ' + str(exit_code))
+        log.info('"' + command + '" returned ' + str(exit_code))
         return exit_code
 
 
@@ -108,7 +105,7 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.getheader('content-length'))
         params_json=self.rfile.read(length)
-        logging.info("Received: " + params_json)
+        log.info("Received: " + params_json)
         params=json.loads(params_json)
         
         run_shell_command('add', params)
@@ -129,7 +126,15 @@ def run_server():
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.argv.append(6660)
+    
     DEFAULT_LOG_DIR='/var/log/breakbox'
     log_dir=DEFAULT_LOG_DIR if os.path.isdir(DEFAULT_LOG_DIR) else '~/.breakbox'
-    logging.basicConfig(filename=log_dir + '/agent.log', level=logging.INFO)
+    logging.basicConfig(filename=log_dir + '/agent.log', level=logging.DEBUG)
+    
+    global log
+    log=logging.getLogger('breakbox-agent')
+    ch=logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    log.addHandler(ch)
+    
     run_server()
