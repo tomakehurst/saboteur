@@ -25,7 +25,7 @@ IPTABLES_COMMAND='sudo /sbin/iptables'
 def run_shell_command(action, parameters, shell=Shell()):
     if parameters['type'] == 'FIREWALL_TIMEOUT':
         run_firewall_timeout_commands(action, parameters, shell)
-    elif parameters['type'] == 'DELAY':
+    elif parameters['type'] in ['DELAY', 'PACKET_LOSS']:
         run_netem_commands(action, parameters, shell)
     else:
         command=base_iptables_command(action, parameters, FAULT_TYPES[parameters['type']])
@@ -61,30 +61,28 @@ def get_network_interface_names(shell=Shell()):
     
 def run_netem_commands(action, parameters, shell=Shell()):
     for interface in get_network_interface_names(shell):
-        delay=str(parameters['delay'])
-
-        if parameters.has_key('variance'):
-            variance_part=' ' + str(parameters['variance']) + 'ms'
-        else:
-            variance_part=''
+        delay_part=netem_delay_part(parameters) if parameters['type'] == 'DELAY' else ''
+        packet_loss_part=netem_packet_loss_part(parameters) if parameters['type'] == 'PACKET_LOSS' else ''
 
         port=str(parameters['to_port'])
-        port_type={ 'IN': 'sport', 'OUT': 'dport' }[parameters['direction']]
-        
-        if parameters.has_key('distribution'):
-            distribution_part=' distribution ' + parameters['distribution']
-        else:
-            distribution_part=''
-            
-        if not parameters.has_key('distribution') and parameters.has_key('correlation'):
-            correlation_part=' ' + str(parameters['correlation']) + '%'
-        else:
-            correlation_part=''
+        port_type={ 'IN': 'sport', 'OUT': 'dport' }[parameters['direction']]    
 
         shell.execute_and_return_status('sudo /sbin/tc qdisc add dev ' + interface + ' root handle 1: prio')
-        shell.execute_and_return_status('sudo /sbin/tc qdisc add dev ' + interface + ' parent 1:3 handle 11: netem delay ' + delay + 'ms' + variance_part + distribution_part + correlation_part)
+        shell.execute_and_return_status('sudo /sbin/tc qdisc add dev ' + interface + ' parent 1:3 handle 11:' + delay_part + packet_loss_part)
         shell.execute_and_return_status('sudo /sbin/tc filter add dev ' + interface + ' protocol ip parent 1:0 prio 3 u32 match ip ' + port_type + ' ' + port + ' 0xffff flowid 1:3')
-        
+
+def netem_delay_part(parameters):
+    delay=str(parameters['delay'])
+    variance_part=' ' + str(parameters['variance']) + 'ms' if parameters.has_key('variance') else ''
+    distribution_part=' distribution ' + parameters['distribution'] if parameters.has_key('distribution') else ''              
+    correlation_part=' ' + str(parameters['correlation']) + '%' if not parameters.has_key('distribution') and parameters.has_key('correlation') else ''
+    return ' netem delay ' + delay + 'ms' + variance_part + distribution_part + correlation_part
+
+def netem_packet_loss_part(parameters):
+    probability_part=' ' + str(parameters['probability']) + '%'
+    correlation_part=' ' + str(parameters['correlation']) + '%' if parameters.has_key('correlation') else ''
+    return ' netem loss' + probability_part + correlation_part
+
 class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     shell=Shell()

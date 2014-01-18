@@ -164,6 +164,37 @@ class TestCommandBuilders(unittest.TestCase):
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
             'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 350ms',
             'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip dport 8822 0xffff flowid 1:3'])
+
+    def test_packet_loss(self):
+        params={
+            'name': "packet-loss",
+            'type': "PACKET_LOSS",
+            'direction': "IN",
+            'to_port': 9191,
+            'probability': 0.3 }
+        self.shell.next_result='eth0'
+        run_shell_command('add', params, self.shell)
+        self.assertEqual(self.shell.commands, [
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.3%',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3'])
+    
+    def test_packet_loss_with_correlation(self):
+        params={
+            'name': "packet-loss-with-correlation",
+            'type': "PACKET_LOSS",
+            'direction': "IN",
+            'to_port': 9191,
+            'probability': 0.2,
+            'correlation': 21 }
+        self.shell.next_result='eth0'
+        run_shell_command('add', params, self.shell)
+        self.assertEqual(self.shell.commands, [
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.2% 21%',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3'])
                 
 
 class MockShell:
