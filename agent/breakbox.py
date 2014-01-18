@@ -97,6 +97,10 @@ def netem_packet_loss_part(parameters):
     probability_part=' ' + str(parameters['probability']) + '%'
     correlation_part=' ' + str(parameters['correlation']) + '%' if parameters.has_key('correlation') else ''
     return ' netem loss' + probability_part + correlation_part
+    
+def reset_tc(shell=Shell()):
+    for interface in get_network_interface_names(shell):
+        shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
 
 class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -116,6 +120,7 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_DELETE(self):
         command=IPTABLES_COMMAND + ' -F'
         self.shell.execute_and_return_status(command)
+        reset_tc(self.shell)
         
         self.send_response(200)
         
