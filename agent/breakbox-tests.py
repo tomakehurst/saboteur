@@ -204,10 +204,10 @@ class MockShell:
         self.next_result = next_result
         self.commands=[]
 
-    def execute_and_return_stdout(self, command):
+    def execute(self, command):
         self.last_command=command
         self.commands.append(command)
-        return self.next_result
+        return 0, self.next_result, ''
         
     def execute_and_return_status(self, command):
         self.commands.append(command)

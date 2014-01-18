@@ -3,18 +3,35 @@
 import os
 import sys
 import json
+import shlex
 import BaseHTTPServer
-from subprocess import call
+from subprocess import Popen, PIPE, call
+import logging
+
 
 class Shell:
     
-    def execute_and_return_stdout(self, command):
-        print("Calling: " + command)
-        return os.popen(command).read()
+    def execute(self, command):
+        logging.info(command)
+        args = shlex.split(command)
+
+        proc = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
+        out, err = proc.communicate()
+        exitcode = proc.returncode
+        
+        logging.info('[' + str(exitcode) + ']')
+        if out:
+            logging.info(out)
+
+        if err:
+            logging.info(err)
+        
+        return exitcode, out, err
         
     def execute_and_return_status(self, command):
-        print("Calling: " + command)
-        return call(command, shell=True)
+        exit_code=call(command, shell=True)
+        logging.info('"' + command + '" returned ' + str(exit_code))
+        return exit_code
 
 
 DIRECTIONS={ 'IN': 'INPUT', 'OUT': 'OUTPUT' }
@@ -57,7 +74,8 @@ def base_iptables_command(action, parameters, fault_type):
     return command  
 
 def get_network_interface_names(shell=Shell()):
-    return shell.execute_and_return_stdout("netstat -i | tail -n+3 | cut -f1 -d ' '").split()
+    exitcode, out, err=shell.execute("netstat -i | tail -n+3 | cut -f1 -d ' '")
+    return out.split()
     
 def run_netem_commands(action, parameters, shell=Shell()):
     for interface in get_network_interface_names(shell):
@@ -67,9 +85,9 @@ def run_netem_commands(action, parameters, shell=Shell()):
         port=str(parameters['to_port'])
         port_type={ 'IN': 'sport', 'OUT': 'dport' }[parameters['direction']]    
 
-        shell.execute_and_return_status('sudo /sbin/tc qdisc add dev ' + interface + ' root handle 1: prio')
-        shell.execute_and_return_status('sudo /sbin/tc qdisc add dev ' + interface + ' parent 1:3 handle 11:' + delay_part + packet_loss_part)
-        shell.execute_and_return_status('sudo /sbin/tc filter add dev ' + interface + ' protocol ip parent 1:0 prio 3 u32 match ip ' + port_type + ' ' + port + ' 0xffff flowid 1:3')
+        shell.execute('sudo /sbin/tc qdisc add dev ' + interface + ' root handle 1: prio')
+        shell.execute('sudo /sbin/tc qdisc add dev ' + interface + ' parent 1:3 handle 11:' + delay_part + packet_loss_part)
+        shell.execute('sudo /sbin/tc filter add dev ' + interface + ' protocol ip parent 1:0 prio 3 u32 match ip ' + port_type + ' ' + port + ' 0xffff flowid 1:3')
 
 def netem_delay_part(parameters):
     delay=str(parameters['delay'])
@@ -90,9 +108,9 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.getheader('content-length'))
         params_json=self.rfile.read(length)
+        logging.info("Received: " + params_json)
         params=json.loads(params_json)
         
-        print("Received: " + params_json)
         run_shell_command('add', params)
 
         self.send_response(200)
@@ -111,4 +129,7 @@ def run_server():
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.argv.append(6660)
+    DEFAULT_LOG_DIR='/var/log/breakbox'
+    log_dir=DEFAULT_LOG_DIR if os.path.isdir(DEFAULT_LOG_DIR) else '~/.breakbox'
+    logging.basicConfig(filename=log_dir + '/agent.log', level=logging.INFO)
     run_server()

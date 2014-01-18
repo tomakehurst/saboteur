@@ -2,12 +2,14 @@
 
 DAEMON=/usr/bin/breakbox-agent
 PIDFILE=/var/run/breakbox/agent.pid
+LOG=/var/log/breakbox/agent-error.log
 
 start_breakbox() {
-  nohup runuser - breakbox -s '/bin/sh' -c $DAEMON < /dev/null >> /var/log/breakbox-agent.log 2>&1 &
-  PID=`ps x | grep $DAEMON | head -1 | awk '{print $1}'`
+  nohup runuser - breakbox -s '/bin/sh' -c $DAEMON < /dev/null >> $LOG 2>&1 &
+  sleep 1
+  PID=`ps -u breakbox | grep "python" | head -1 | awk '{print $1}'`
   if [ -z $PID ]; then
-	echo "Failed to start Breakbox agent"
+    echo "Failed to start Breakbox agent"
     exit 1
   fi
 
