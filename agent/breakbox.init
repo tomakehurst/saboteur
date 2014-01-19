@@ -10,7 +10,7 @@ start_breakbox() {
   PID=`ps -u breakbox | grep "python" | head -1 | awk '{print $1}'`
   if [ -z $PID ]; then
     echo "Failed to start Breakbox agent"
-    exit 1
+    return 1
   fi
 
   echo $PID > $PIDFILE
@@ -20,27 +20,27 @@ start_breakbox() {
 stop_breakbox() {
   if [ ! -f $PIDFILE ]; then
     echo "Breakbox agent wasn't running"
-	exit 7
+    return 7
   fi
 
   PID=`cat $PIDFILE`
   if [ -z $PID ]; then
-	echo "Breakbox agent wasn't running"
+    echo "Breakbox agent wasn't running"
     RETVAL=7
   else
     kill $PID
-	RETVAL=0
+    RETVAL=0
     echo "Stopped Breakbox agent"
   fi
 
   rm -f $PIDFILE
-  exit $RETVAL
+  return $RETVAL
 }
 
 breakbox_status() {
   if [ ! -f $PIDFILE ]; then
     echo "Breakbox agent not running"
-	exit 3
+    return 3
   fi
 
   PID=`cat $PIDFILE`
@@ -53,27 +53,28 @@ breakbox_status() {
 	RETVAL=0
   fi
 
-  exit $RETVAL
+  return $RETVAL
 }
 
 case "$1" in
   start)
     start_breakbox
-	;;
+    ;;
   stop)
     stop_breakbox
-	;;
+    ;;
   restart)
     stop_breakbox
-	start_breakbox
-	;;
+    start_breakbox
+    ;;
   status)
     breakbox_status
     ;;
   *)
     echo "Usage: service breakbox {start|stop|restart|status}"
-	exit 3
-	;;
+    exit 3
+    ;;
 esac
 
-exit 0
+retval=$?
+exit $retval
