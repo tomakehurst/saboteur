@@ -30,3 +30,6 @@ clojure-client/pom.xml
 .lein*
 **/.lein*
 **/.nrepl*
+
+.DS_Store
+**/.DS_Store
