@@ -17,13 +17,12 @@ An RPM package is available for the agent. See [Releases](https://github.com/tom
 Adding faults
 -------------
 Breakbox has a simple JSON over HTTP API. To add a new rule, simply POST to the agent process on port 6660 e.g.
-
 ``
-    $ curl -X POST -d '{ "name": "packet-loss-to-app-server",
-    "type": "PACKET_LOSS",
-    "direction": "IN",
-    "to_port": 8080,
-    "probability": 0.2,
+    $ curl -X POST -d '{ "name": "packet-loss-to-app-server",\
+    "type": "PACKET_LOSS",\
+    "direction": "IN",\
+    "to_port": 8080,\
+    "probability": 0.2,\
     "correlation": 25 }' http://192.168.2.11:6660/
 ``
 
@@ -33,7 +32,6 @@ for more examples of valid commands.
 Resetting
 ---------
 To reset all faults, send a DELETE request to the root path e.g.
-
 ``
     $ curl -X DELETE http://192.168.2.11:6660/
 ``
