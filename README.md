@@ -32,6 +32,7 @@ for more examples of valid commands.
 Resetting
 ---------
 To reset all faults, send a DELETE request to the root path e.g.
+
 ``
     $ curl -X DELETE http://192.168.2.11:6660/
 ``

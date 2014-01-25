@@ -33,3 +33,6 @@ clojure-client/pom.xml
 
 .DS_Store
 **/.DS_Store
+
+.vagrant
+**/.vagrant
