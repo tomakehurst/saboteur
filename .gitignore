@@ -36,3 +36,6 @@ clojure-client/pom.xml
 
 .vagrant
 **/.vagrant
+
+*.swp
+**/*.swp
