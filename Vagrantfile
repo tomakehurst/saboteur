@@ -18,6 +18,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
            vb.customize ["modifyvm", :id, "--memory", "512"]
         end
 
-        host.vm.provision "shell", path: "provision-build-vm.sh"
+        host.vm.provision "shell", path: "buildbox/provision-build-vm.sh"
     end
 end
