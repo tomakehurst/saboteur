@@ -87,7 +87,7 @@ option_parser.add_option('-v', '--variance', dest='variance', type='int')
 option_parser.add_option('-c', '--correlation', dest='correlation', type='int')
 option_parser.add_option('-i', '--distribution', dest='distribution')
 option_parser.add_option('-p', '--protocol', dest='protocol')
-option_parser.add_option('-n', '--probability', dest='probability', type='float')
+option_parser.add_option('-n', '--probability', dest='probability', type='int')
 option_parser.add_option('-r', '--from', dest='from')
 option_parser.add_option('-o', '--hosts', dest='hosts')
 
