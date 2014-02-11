@@ -227,10 +227,19 @@ class TestCommands(unittest.TestCase):
         self.assertEqual(response['status'], 400)
         self.assertEqual(response_data['message'], "'bad_field' is not a valid parameter")
         
+    def test_missing_required_general_parameter(self):
+        params={ 'name': 'whatever', 'type': 'PACKET_LOSS' }
+        response=self.app.handle(post_request(params))
+        response_data=json.loads(response['body'])
+        
+        self.assertEqual(response['status'], 400)
+        self.assertEqual(response_data['message'], "'direction' is a required parameter")
+        
     def test_invalid_fault_type(self):
         params={
             'name': "no-chance",
-            'type': "ATOMIC_BOMB" }
+            'type': "ATOMIC_BOMB",
+            'direction': "IN" }
         response=self.app.handle(post_request(params))
         response_data=json.loads(response['body'])
         

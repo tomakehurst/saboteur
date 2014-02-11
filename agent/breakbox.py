@@ -39,6 +39,7 @@ class Shell:
         return exit_code
 
 ALL_PARAMETER_KEYS=['name', 'type', 'direction', 'from', 'to_port', 'to', 'protocol', 'timeout', 'delay', 'variance', 'correlation', 'distribution', 'probability']
+REQUIRED_KEYS=['name', 'type', 'direction']
 ALL_FAULT_TYPES=['NETWORK_FAILURE', 'SERVICE_FAILURE', 'FIREWALL_TIMEOUT', 'DELAY', 'PACKET_LOSS']
 
 DIRECTIONS={ 'IN': 'INPUT', 'OUT': 'OUTPUT' }
@@ -49,7 +50,11 @@ IPTABLES_COMMAND='sudo /sbin/iptables'
 def validate(params):
     for key in params.keys():
         if key not in ALL_PARAMETER_KEYS:
-            raise ValidationError("'{0}' is not a valid parameter".format(key))        
+            raise ValidationError("'{0}' is not a valid parameter".format(key))
+            
+    for key in REQUIRED_KEYS:
+        if key not in params.keys():
+            raise ValidationError("'{0}' is a required parameter".format(key))
     
     if params['type'] not in ALL_FAULT_TYPES:
         raise ValidationError("'{0}' is not a valid fault type".format(params['type']))
