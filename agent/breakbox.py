@@ -7,6 +7,14 @@ import BaseHTTPServer
 from subprocess import Popen, PIPE, call
 import logging
 
+class ValidationError(Exception):
+
+    def __init__(self, message):
+        self.message=message
+        
+    def __str__(self):
+        return self.message
+
 class Shell:
     
     def execute(self, command):
@@ -30,11 +38,16 @@ class Shell:
         log.info('"' + command + '" returned ' + str(exit_code))
         return exit_code
 
-
+ALL_PARAMETER_KEYS=['name', 'type', 'direction', 'from', 'to_port', 'to', 'protocol', 'timeout', 'delay', 'variance', 'correlation', 'distribution', 'probability']
 DIRECTIONS={ 'IN': 'INPUT', 'OUT': 'OUTPUT' }
 ACTIONS={ 'add': '-A',  'delete': '-D' }
 FAULT_TYPES={ "NETWORK_FAILURE": "DROP", "SERVICE_FAILURE": "REJECT", 'FIREWALL_TIMEOUT': 'DROP' }
 IPTABLES_COMMAND='sudo /sbin/iptables'
+
+def validate(parameters):
+    for key in parameters.keys():
+        if key not in ALL_PARAMETER_KEYS:
+            raise ValidationError("'{0}' is not a valid parameter".format(key))
 
 def run_shell_command(action, parameters, shell=Shell()):
     if parameters['type'] == 'FIREWALL_TIMEOUT':
@@ -110,13 +123,18 @@ class BreakboxWebApp:
     def handle(self, request):
         if request['method'] == 'POST':
             params=json.loads(request['body'])
-            run_shell_command('add', params, self.shell)
+            try:
+                validate(params)
+                run_shell_command('add', params, self.shell)
+                response={ 'status': 200 }
+            except ValidationError as ve:
+                response={ 'status': 400, 'body': json.dumps({ 'message': ve.message })}
         elif request['method'] == 'DELETE':
             command=IPTABLES_COMMAND + ' -F'
             self.shell.execute_and_return_status(command)
             reset_tc(self.shell)
+            response={ 'status': 200 }
         
-        response={ 'status': 200 }
         return response
 
 

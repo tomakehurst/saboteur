@@ -6,11 +6,11 @@ def post_request(params):
     return request('POST', params)
     
 def delete_request():
-    return { 'url': '/',
+    return { 'path': '/',
              'method': 'DELETE' }
 
 def request(method, params):
-    return { 'url': '/',
+    return { 'path': '/',
              'method': method,
              'body': json.dumps(params) }
 
@@ -218,6 +218,15 @@ class TestCommands(unittest.TestCase):
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
             'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.2% 21%',
             'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3'])
+
+    def test_invalid_input(self):
+        params={ 'bad_field': 5 }
+        response=self.app.handle(post_request(params))
+        response_data=json.loads(response['body'])
+        
+        self.assertEqual(response['status'], 400)
+        self.assertEqual(response_data['message'], "'bad_field' is not a valid parameter")
+        
 
 class MockShell:
 
