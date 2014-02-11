@@ -102,27 +102,42 @@ def reset_tc(shell=Shell()):
     for interface in get_network_interface_names(shell):
         shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
 
+class BreakboxWebApp:
+
+    def __init__(self, shell=Shell()):
+        self.shell=shell
+    
+    def handle(self, request):
+        if request['method'] == 'POST':
+            params=json.loads(request['body'])
+            run_shell_command('add', params, self.shell)
+        elif request['method'] == 'DELETE':
+            command=IPTABLES_COMMAND + ' -F'
+            self.shell.execute_and_return_status(command)
+            reset_tc(self.shell)
+        
+        response={ 'status': 200 }
+        return response
+
+
 class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-    shell=Shell()
+    app=BreakboxWebApp()
     
     def do_POST(self):
         length = int(self.headers.getheader('content-length'))
-        params_json=self.rfile.read(length)
-        log.info("Received: " + params_json)
-        params=json.loads(params_json)
-        
-        run_shell_command('add', params)
-
-        self.send_response(200)
+        body=self.rfile.read(length)
+        log.info("Received: " + body)
+        request={ 'path': self.path, 'method': 'POST', 'body': body }
+        response=app.handle(request)
+        self.send_response(response['status'])
         
         
     def do_DELETE(self):
-        command=IPTABLES_COMMAND + ' -F'
-        self.shell.execute_and_return_status(command)
-        reset_tc(self.shell)
+        request={ 'path': self.path, 'method': 'DELETE' }
+        response=app.handle(request)
+        self.send_response(response['status'])
         
-        self.send_response(200)
         
 def run_server():
     BaseHTTPServer.test(BreakboxHTTPRequestHandler, BaseHTTPServer.HTTPServer)

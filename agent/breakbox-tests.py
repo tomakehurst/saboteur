@@ -1,12 +1,25 @@
-from breakbox import run_shell_command
+from breakbox import BreakboxWebApp
+import json
 import unittest
 
+def post_request(params):
+    return request('POST', params)
+    
+def delete_request():
+    return { 'url': '/',
+             'method': 'DELETE' }
 
-class TestCommandBuilders(unittest.TestCase):
+def request(method, params):
+    return { 'url': '/',
+             'method': method,
+             'body': json.dumps(params) }
 
+class TestCommands(unittest.TestCase):
+    
     def setUp(self):
         self.shell=MockShell()
-    
+        self.app=BreakboxWebApp(self.shell)
+
     def test_isolate_webserver(self):
         params={ 
             'name': 'isolate-web-server',
@@ -15,20 +28,19 @@ class TestCommandBuilders(unittest.TestCase):
             'to_port': 80,
             'protocol': 'TCP'
         }
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 80')
+    
+    def test_reset(self):
+        self.shell.next_result='eth1'
         
-
-    def test_isolate_webserver_delete(self):
-        params={
-            'name': "isolate-web-server",
-            'type': "NETWORK_FAILURE",
-            'direction': "IN",
-            'to_port': 81
-        }
-        run_shell_command('delete', params, self.shell)
-        self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -D INPUT -p TCP -j DROP --dport 81')
-        
+        response=self.app.handle(delete_request())
+        self.assertEqual(response['status'], 200)
+        self.assertEqual(self.shell.commands, [
+            'sudo /sbin/iptables -F',
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc del dev eth1 root'])        
         
     def test_isolate_udp_server(self):
         params={
@@ -38,7 +50,8 @@ class TestCommandBuilders(unittest.TestCase):
             'to_port': 8111,
             'protocol': "UDP"
         }
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p UDP -j DROP --dport 8111')
         
         
@@ -50,7 +63,8 @@ class TestCommandBuilders(unittest.TestCase):
             'to_port': 8080,
             'protocol': "TCP"
         }
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p TCP -j REJECT --dport 8080')
         
         
@@ -63,7 +77,8 @@ class TestCommandBuilders(unittest.TestCase):
             'to_port': 443,
             'protocol': "TCP"
         }
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP -d my.dest.host.com --dport 443')
         
 
@@ -75,7 +90,8 @@ class TestCommandBuilders(unittest.TestCase):
             'from': 'my.source.host.com',
             'protocol': "TCP"
         }
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP -s my.source.host.com')
     
     def test_firewall_timeout(self):
@@ -87,7 +103,8 @@ class TestCommandBuilders(unittest.TestCase):
             'protocol': "TCP",
             'timeout': 101
         }
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.commands, [
             'sudo /sbin/iptables -A INPUT -p TCP -j ACCEPT --dport 3000 -m conntrack --ctstate NEW,ESTABLISHED',
             'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 3000',
@@ -105,7 +122,8 @@ class TestCommandBuilders(unittest.TestCase):
             'variance': 12,
             'distribution': 'normal' }
         self.shell.next_result='eth0\nvmnet8'
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.commands, [
             "netstat -i | tail -n+3 | cut -f1 -d ' '",
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
@@ -125,7 +143,8 @@ class TestCommandBuilders(unittest.TestCase):
             'variance': 50,
             'distribution': 'pareto' }
         self.shell.next_result='eth0'
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.commands, [
             "netstat -i | tail -n+3 | cut -f1 -d ' '",
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
@@ -142,7 +161,8 @@ class TestCommandBuilders(unittest.TestCase):
             'variance': 5,
             'correlation': 25 }
         self.shell.next_result='eth0'
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.commands, [
             "netstat -i | tail -n+3 | cut -f1 -d ' '",
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
@@ -158,7 +178,8 @@ class TestCommandBuilders(unittest.TestCase):
             'to_port': 8822,
             'delay': 350 }
         self.shell.next_result='eth0'
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.commands, [
             "netstat -i | tail -n+3 | cut -f1 -d ' '",
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
@@ -173,7 +194,8 @@ class TestCommandBuilders(unittest.TestCase):
             'to_port': 9191,
             'probability': 0.3 }
         self.shell.next_result='eth0'
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.commands, [
             "netstat -i | tail -n+3 | cut -f1 -d ' '",
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
@@ -189,13 +211,13 @@ class TestCommandBuilders(unittest.TestCase):
             'probability': 0.2,
             'correlation': 21 }
         self.shell.next_result='eth0'
-        run_shell_command('add', params, self.shell)
+        response=self.app.handle(post_request(params))
+        self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.commands, [
             "netstat -i | tail -n+3 | cut -f1 -d ' '",
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
             'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.2% 21%',
             'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3'])
-                
 
 class MockShell:
 
