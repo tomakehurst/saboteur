@@ -136,7 +136,7 @@ class BreakboxWebApp:
             try:
                 validate(params)
                 run_shell_command('add', params, self.shell)
-                response={ 'status': 200 }
+                response={ 'status': 200, 'body': '{}' }
             except ValidationError as ve:
                 response={ 'status': 400, 'body': json.dumps({ 'message': ve.message })}
         elif request['method'] == 'DELETE':
@@ -156,14 +156,21 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         length = int(self.headers.getheader('content-length'))
         body=self.rfile.read(length)
         log.info("Received: " + body)
+        
         request={ 'path': self.path, 'method': 'POST', 'body': body }
-        response=app.handle(request)
+        response=self.app.handle(request)
+        
         self.send_response(response['status'])
+        self.end_headers()
+        response_body=response['body']
+        log.info("Writing response " + response_body)
+        self.wfile.write(response_body)
+        self.wfile.close()
         
         
     def do_DELETE(self):
         request={ 'path': self.path, 'method': 'DELETE' }
-        response=app.handle(request)
+        response=self.app.handle(request)
         self.send_response(response['status'])
         
         
