@@ -8,4 +8,4 @@ clean:
 
 rpm:
 	-mkdir -p build
-	fpm -s dir -t rpm -d "python >= 2.6" -p build -n breakbox-cli -a noarch -v $(VERSION) breakbox-cli.py=/usr/bin/bbox
+	fpm -s dir -t rpm -d "python >= 2.6" -p build -n breakbox-cli -a noarch -v $(VERSION) bbox=/usr/bin/bbox
