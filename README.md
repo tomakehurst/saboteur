@@ -12,6 +12,8 @@ Currently these include:
 -   Packet loss
 -   TCP connection timeout (as often happens when two systems are separated by a stateful firewall)
 
+Currently it is Linux only, but support may be added for OSX in future.
+
 An RPM package is available for the agent. See [Releases](https://github.com/tomakehurst/breakbox/releases "Releases").
 
 A CLI is also available as an RPM under releases, or you can just download and use it directly from source https://raw.github.com/tomakehurst/breakbox/master/cli/bbox.
@@ -62,6 +64,7 @@ When running the breakbox agent on the host of the service being depended on, de
     $ bbox define-service db --hosts db01,db02 --to_port 3306
 ``
 
+Typing ``bbox -h`` prints detailed usage information.
 
 Using the HTTP API directly
 ---------------------------
