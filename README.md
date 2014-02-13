@@ -24,16 +24,19 @@ The command line interface supports three types of action:
 * Reset all faults
 
 A client or service must first be defined before faults can be added or reset. You should define a client when the breakbox agent is running on the same host as client to a remote service. For instance if my application on host app01 connects to a database cluster on hosts db01 and db02 (listening on port 3306) and the breakbox agent is running on app01, I'd define a client:
+
 ``
     $ bbox define-client db --hosts db01,db02 --to_port 3306
 ``
 
 Then I can add some delay onto packets between my app the the DB nodes:
+
 ``
     $ bbox add db --fault_type DELAY --delay 200 --variance 50 --distribution normal
 ``
 
 When I want to put everything back to normal I can issue a reset:
+
 ``
     $ bbox reset db
 ``
