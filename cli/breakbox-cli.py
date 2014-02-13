@@ -7,6 +7,9 @@ from optparse import OptionParser
 import os
 from os.path import expanduser
 
+ALL_FAULT_TYPES=['NETWORK_FAILURE', 'SERVICE_FAILURE', 'FIREWALL_TIMEOUT', 'DELAY', 'PACKET_LOSS']
+RESPONSES={ 200: 'OK', 400: 'Bad request', 500: 'Server error' }
+
 BREAKBOX_HOME=expanduser("~") + '/.breakbox'
 if not os.path.exists(BREAKBOX_HOME):
     os.makedirs(BREAKBOX_HOME)
@@ -41,7 +44,7 @@ def add_fault(config_name, options):
         response=conn.getresponse()
         data=response.read()
         conn.close()
-        print(': ' + str(response.status))
+        print(': ' + RESPONSES[response.status])
         if response.status != 200:
             print(data)
 
@@ -56,7 +59,7 @@ def reset_hosts(config_name, options):
         response=conn.getresponse()
         data=response.read()
         conn.close()
-        print(': ' + str(response.status))
+        print(': ' + RESPONSES[response.status])
         if response.status != 200:
             print(data)
 
@@ -66,34 +69,40 @@ ACTIONS={'add': add_fault,
     'reset': reset_hosts
 }
 
-if len(sys.argv) < 3:
-    print('Usage: ' + sys.argv[0] + ' <action> <client-or-service-name> <OPTIONS>')
+
+option_parser=OptionParser(usage="Usage: %prog <action> <client-or-service-name> [options]\n\n\
+Valid actions: add, define-client, define-service, reset")
+option_parser.add_option('-n', '--name', dest='name', help='A name for the rule', default='(no-name)')
+option_parser.add_option('-f', '--from', dest='from', help='Limit rule to packets coming from this host')
+option_parser.add_option('-t', '--to', dest='to', help='Limit rule to packets to this host')
+option_parser.add_option('-p', '--to_port', dest='to_port', type='int')
+option_parser.add_option('-F', '--fault_type', dest='type', help="Valid types: " + ", ".join(ALL_FAULT_TYPES))
+option_parser.add_option('-d', '--delay', dest='delay', type='int', help='Delay in milliseconds. Only valid with fault type DELAY.')
+option_parser.add_option('-v', '--variance', dest='variance', type='int', help='Delay variance in milliseconds. Only valid with fault type DELAY.')
+option_parser.add_option('-c', '--correlation', dest='correlation', type='int', help='Percent delay or packet loss correlation. Only valid with fault type DELAY or PACKET_LOSS.')
+option_parser.add_option('-D', '--distribution', dest='distribution', help='Delay distribution type. Valid types: uniform, normal, pareto, paretonormal. Only valid with fault type DELAY.')
+option_parser.add_option('-r', '--protocol', dest='protocol', help='Default is TCP')
+option_parser.add_option('-P', '--probability', dest='probability', type='int', help='Packet loss probability. Only valid with fault type PACKET_LOSS.')
+option_parser.add_option('-T', '--timeout', dest='timeout', type='int', help='TCP connection timeout. Only valid when used with fault type FIREWALL_TIMEOUT.')
+option_parser.add_option('-H', '--hosts', dest='hosts', help='Hosts for this client/service')
+
+(options, args)=option_parser.parse_args()
+
+if len(sys.argv) < 2:
+    option_parser.print_help()
     sys.exit(2)
 
-action=sys.argv[1]
+action=args[0]
+print("action: "+ action)
 
 if action not in ACTIONS.keys():
     print('Valid actions: ' + ", ".join(ACTIONS.keys()))
     sys.exit(2)
 
-config_name=sys.argv[2]
-additional_options=sys.argv[3:]
-
-option_parser=OptionParser()
-option_parser.add_option('-t', '--to_port', dest='to_port', type='int')
-option_parser.add_option('-f', '--fault_type', dest='type')
-option_parser.add_option('-d', '--delay', dest='delay', type='int')
-option_parser.add_option('-v', '--variance', dest='variance', type='int')
-option_parser.add_option('-c', '--correlation', dest='correlation', type='int')
-option_parser.add_option('-i', '--distribution', dest='distribution')
-option_parser.add_option('-p', '--protocol', dest='protocol')
-option_parser.add_option('-n', '--probability', dest='probability', type='int')
-option_parser.add_option('-r', '--from', dest='from')
-option_parser.add_option('-o', '--hosts', dest='hosts')
-
-(options, args)=option_parser.parse_args(additional_options)
-
+config_name=args[1]
+print("config_name: " + config_name)
 present_options=dict(filter(lambda (k,v): v is not None, options.__dict__.items()))
 
+#print("Action: " + action + ". Options: " + str(options))
 action_fn=ACTIONS[action]
 action_fn(config_name, present_options)
