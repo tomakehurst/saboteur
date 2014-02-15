@@ -86,3 +86,9 @@ To reset all faults, send a DELETE request to the root path e.g.
 ``
     $ curl -X DELETE http://192.168.2.11:6660/
 ``
+
+Limitations
+-----------
+The Breakbox agent currently implements its reset feature by deleting all iptables and tc rules, so it currently won't play nicely on systems that have rules configured via other means. This will be improved in future, probably by having Breakbox keep track of rules it has created so that these can be targeted for reset.
+
+It's also likely that adding multiple DELAY and/or PACKET_LOSS rules will not work correctly in many cases.
