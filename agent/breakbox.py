@@ -172,6 +172,8 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         request={ 'path': self.path, 'method': 'DELETE' }
         response=self.app.handle(request)
         self.send_response(response['status'])
+        self.end_headers()
+        self.wfile.close()
         
         
 def run_server():
