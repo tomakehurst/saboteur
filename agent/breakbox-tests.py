@@ -65,7 +65,7 @@ class TestCommands(unittest.TestCase):
         }
         response=self.app.handle(post_request(params))
         self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p TCP -j REJECT --dport 8080')
+        self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p TCP -j REJECT --reject-with tcp-reset --dport 8080')
         
         
     def test_client_dependency_unreachable(self):
