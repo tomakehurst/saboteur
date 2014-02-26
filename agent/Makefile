@@ -1,5 +1,5 @@
 BUILDDIR = build
-VERSION = 0.2
+VERSION = 0.3
 
 .PHONY: clean rpm test
 
