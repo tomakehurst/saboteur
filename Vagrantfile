@@ -7,10 +7,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     config.vm.define "buildbox" do |host|
         host.vm.hostname = "buildbox"
-        host.vm.box = "centos64min"
+        host.vm.box = "centos64"
         host.vm.box_url = "https://github.com/2creatives/vagrant-centos/releases/download/v0.1.0/centos64-x86_64-20131030.box"
 
-        host.vm.network :private_network, ip: "192.168.2.99"
+        host.vm.network :private_network, ip: "192.168.2.199"
 
         host.vm.synced_folder ".", "/mnt/breakbox"
 

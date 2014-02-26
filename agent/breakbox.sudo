@@ -1,1 +1,2 @@
+Defaults:breakbox !requiretty
 breakbox  ALL=NOPASSWD:/sbin/iptables*,/sbin/tc*,/usr/bin/tee
