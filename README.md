@@ -40,6 +40,9 @@ The command line interface supports three types of action:
 * Add a fault
 * Reset all faults
 
+*Note: I'm not particularly keen on the defined client/service model for the CLI, so I'll probably change it to accept
+host, port and direction directly when adding faults*
+
 A client or service must first be defined before faults can be added or reset. You should define a client when the saboteur agent is running on the same host as client to a remote service. For instance if my application on host app01 connects to a database cluster on hosts db01 and db02 (listening on port 3306) and the saboteur agent is running on app01, I'd define a client:
 
 ``
@@ -87,8 +90,20 @@ To reset all faults, send a DELETE request to the root path e.g.
     $ curl -X DELETE http://192.168.2.11:6660/
 ``
 
+Resilience testing Saboteur and JUnit
+-------------------------------------
+[Crash Lab](https://github.com/tomakehurst/crash-lab) is a Java library for automating resilience/stabilty type tests
+(or any scenario involving network faults), which has a Saboteur client as part of it, and
+[some examples](https://github.com/tomakehurst/crash-lab/blob/master/src/test/java/com/tomakehurst/crashlab/ExampleScenarios.java).
+
+
+
 Limitations
 -----------
-The Saboteur agent currently implements its reset feature by deleting all iptables and tc rules, so it currently won't play nicely on systems that have rules configured via other means. This will be improved in future, probably by having Saboteur keep track of rules it has created so that these can be targeted for reset.
+The Saboteur agent currently implements its reset feature by deleting all iptables and tc rules, so it currently won't
+play nicely on systems that have rules configured via other means. This will be improved in future, probably by having
+Saboteur keep track of rules it has created so that these can be targeted for reset.
 
-It's also likely that adding multiple DELAY and/or PACKET_LOSS rules will not work correctly in many cases.
+It's also likely that adding multiple DELAY and/or PACKET_LOSS rules will not work correctly.
+
+Fixes are coming for both of these issues.
