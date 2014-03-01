@@ -23,7 +23,7 @@ Installing the agent
 Currently the agent installs from an RPM only (DEB package to follow). It's only dependency is Python 2.6.6+, so if this is already installed you can install the RPM directly:
 
 ``
-    $ rpm -ivh https://github.com/tomakehurst/saboteur/releases/download/v0.2/saboteur-agent-0.5-1.noarch.rpm
+    $ rpm -ivh https://github.com/tomakehurst/saboteur/releases/download/v0.5/saboteur-agent-0.5-1.noarch.rpm
 ``
 
 After installation, start the agent daemon in the usual way:
