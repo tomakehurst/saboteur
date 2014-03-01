@@ -12,7 +12,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         host.vm.network :private_network, ip: "192.168.2.199"
 
-        host.vm.synced_folder ".", "/mnt/breakbox"
+        host.vm.synced_folder ".", "/mnt/saboteur"
 
         host.vm.provider :virtualbox do |vb|
            vb.customize ["modifyvm", :id, "--memory", "512"]

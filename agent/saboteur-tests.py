@@ -1,4 +1,4 @@
-from breakbox import BreakboxWebApp
+from saboteur import SaboteurWebApp
 import json
 import unittest
 
@@ -18,7 +18,7 @@ class TestCommands(unittest.TestCase):
     
     def setUp(self):
         self.shell=MockShell()
-        self.app=BreakboxWebApp(self.shell)
+        self.app=SaboteurWebApp(self.shell)
 
     def test_isolate_webserver(self):
         params={ 

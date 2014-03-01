@@ -1,0 +1,80 @@
+#!/usr/bin/env sh
+
+DAEMON=/usr/bin/saboteur-agent
+PIDFILE=/var/run/saboteur/agent.pid
+LOG=/var/log/saboteur/agent-error.log
+
+start_saboteur() {
+  nohup runuser - saboteur -s '/bin/sh' -c $DAEMON < /dev/null >> $LOG 2>&1 &
+  sleep 1
+  PID=`ps -u saboteur | grep "python" | head -1 | awk '{print $1}'`
+  if [ -z $PID ]; then
+    echo "Failed to start Saboteur agent"
+    return 1
+  fi
+
+  echo $PID > $PIDFILE
+  echo "Started Saboteur agent"
+}
+
+stop_saboteur() {
+  if [ ! -f $PIDFILE ]; then
+    echo "Saboteur agent wasn't running"
+    return 7
+  fi
+
+  PID=`cat $PIDFILE`
+  if [ -z $PID ]; then
+    echo "Saboteur agent wasn't running"
+    RETVAL=7
+  else
+    kill $PID
+    RETVAL=0
+    echo "Stopped Saboteur agent"
+  fi
+
+  rm -f $PIDFILE
+  return $RETVAL
+}
+
+saboteur_status() {
+  if [ ! -f $PIDFILE ]; then
+    echo "Saboteur agent not running"
+    return 3
+  fi
+
+  PID=`cat $PIDFILE`
+  PIDS=`ps -p $PID | tail -n+2` 
+  if [ -z "$PIDS" ]; then
+	echo "Saboteur agent not running"
+	RETVAL=1
+  else
+	echo "Saboteur agent running: $PID"
+	RETVAL=0
+  fi
+
+  return $RETVAL
+}
+
+case "$1" in
+  start)
+    start_saboteur
+    ;;
+  stop)
+    stop_saboteur
+    ;;
+  restart)
+    stop_saboteur
+    start_saboteur
+    ;;
+  status)
+    saboteur_status
+    ;;
+  *)
+    echo "Usage: service saboteur {start|stop|restart|status}"
+    exit 3
+    ;;
+esac
+
+retval=$?
+exit $retval

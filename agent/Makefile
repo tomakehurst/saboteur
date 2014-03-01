@@ -1,5 +1,5 @@
 BUILDDIR = build
-VERSION = 0.4
+VERSION = 0.5
 
 .PHONY: clean rpm test
 
@@ -8,7 +8,7 @@ clean:
 
 rpm:
 	-mkdir -p build
-	fpm -s dir -t rpm -d "python >= 2.6" -p build -n breakbox-agent -a noarch -v $(VERSION) --before-install before-install.sh --after-remove after-remove.sh breakbox.py=/usr/bin/breakbox-agent breakbox.sudo=/etc/sudoers.d/breakbox breakbox.init=/etc/init.d/breakbox-agent
+	fpm -s dir -t rpm -d "python >= 2.6" -p build -n saboteur-agent -m "Tom Akehurst" --description "A fault injection agent for resilience testing" -a noarch -v $(VERSION) --before-install before-install.sh --after-remove after-remove.sh saboteur.py=/usr/bin/saboteur-agent saboteur.sudo=/etc/sudoers.d/saboteur saboteur.init=/etc/init.d/saboteur-agent
 
 test:
-	python breakbox-tests.py
+	python saboteur-tests.py

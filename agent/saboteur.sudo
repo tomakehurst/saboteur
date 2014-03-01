@@ -1,0 +1,2 @@
+Defaults:saboteur !requiretty
+saboteur  ALL=NOPASSWD:/sbin/iptables*,/sbin/tc*,/usr/bin/tee

@@ -10,7 +10,7 @@ from os.path import expanduser
 ALL_FAULT_TYPES=['NETWORK_FAILURE', 'SERVICE_FAILURE', 'FIREWALL_TIMEOUT', 'DELAY', 'PACKET_LOSS']
 RESPONSES={ 200: 'OK', 400: 'Bad request', 500: 'Server error' }
 
-BREAKBOX_HOME=expanduser("~") + '/.breakbox'
+BREAKBOX_HOME=expanduser("~") + '/.saboteur'
 if not os.path.exists(BREAKBOX_HOME):
     os.makedirs(BREAKBOX_HOME)
 

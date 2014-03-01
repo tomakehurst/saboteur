@@ -125,7 +125,7 @@ def reset_tc(shell=Shell()):
     for interface in get_network_interface_names(shell):
         shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
 
-class BreakboxWebApp:
+class SaboteurWebApp:
 
     def __init__(self, shell=Shell()):
         self.shell=shell
@@ -148,9 +148,9 @@ class BreakboxWebApp:
         return response
 
 
-class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class SaboteurHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-    app=BreakboxWebApp()
+    app=SaboteurWebApp()
     
     def do_POST(self):
         length = int(self.headers.getheader('content-length'))
@@ -177,19 +177,19 @@ class BreakboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         
         
 def run_server():
-    BaseHTTPServer.test(BreakboxHTTPRequestHandler, BaseHTTPServer.HTTPServer)
+    BaseHTTPServer.test(SaboteurHTTPRequestHandler, BaseHTTPServer.HTTPServer)
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.argv.append(6660)
     
-    DEFAULT_LOG_DIR='/var/log/breakbox'
-    log_dir=DEFAULT_LOG_DIR if os.path.isdir(DEFAULT_LOG_DIR) else '~/.breakbox'
+    DEFAULT_LOG_DIR='/var/log/saboteur'
+    log_dir=DEFAULT_LOG_DIR if os.path.isdir(DEFAULT_LOG_DIR) else '~/.saboteur'
     logging.basicConfig(filename=log_dir + '/agent.log', level=logging.DEBUG)
     
     global log
-    log=logging.getLogger('breakbox-agent')
+    log=logging.getLogger('saboteur-agent')
     ch=logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
     log.addHandler(ch)

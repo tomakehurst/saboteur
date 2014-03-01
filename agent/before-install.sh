@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 
-[ -f /etc/init.d/breakbox-agent ] && service breakbox-agent stop
+[ -f /etc/init.d/saboteur-agent ] && service saboteur-agent stop
 
-sudo id -u breakbox &> /dev/null || sudo useradd -m -s /bin/bash breakbox
-mkdir -p /var/run/breakbox
-chown breakbox:breakbox /var/run/breakbox
+sudo id -u saboteur &> /dev/null || sudo useradd -m -s /bin/bash saboteur
+mkdir -p /var/run/saboteur
+chown saboteur:saboteur /var/run/saboteur
 
-mkdir -p /var/log/breakbox
-chown breakbox:breakbox /var/log/breakbox
+mkdir -p /var/log/saboteur
+chown saboteur:saboteur /var/log/saboteur
