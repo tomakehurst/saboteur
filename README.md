@@ -16,7 +16,7 @@ Currently it is Linux only, but support may be added for OSX in future.
 
 RPM and DEB packages are available for the agent. See [Releases](https://github.com/tomakehurst/saboteur/releases "Releases").
 
-A CLI is also available as an RPM under releases, or you can just download and use it directly from source https://raw.github.com/tomakehurst/saboteur/master/sab.
+A CLI is also available as an RPM under releases, or you can just download and use it directly from source https://raw.github.com/tomakehurst/saboteur/master/bin/sab.
 
 Installing the agent and CLI
 ----------------------------
@@ -96,7 +96,7 @@ Saboteur has a simple JSON over HTTP API. To add a new rule, simply POST to the 
     "correlation": 25 }' http://192.168.2.11:6660/
 ``
 
-See [saboteur-tests.py](https://github.com/tomakehurst/saboteur/blob/master/agent/saboteur-tests.py "saboteur-tests.py")
+See [saboteur-tests.py](https://github.com/tomakehurst/saboteur/blob/master/saboteur/tests/saboteur-tests.py "saboteur-tests.py")
 for more examples of valid commands.
 
 To reset all faults, send a DELETE request to the root path e.g.
