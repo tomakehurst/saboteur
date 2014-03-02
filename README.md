@@ -18,12 +18,20 @@ An RPM package is available for the agent. See [Releases](https://github.com/tom
 
 A CLI is also available as an RPM under releases, or you can just download and use it directly from source https://raw.github.com/tomakehurst/saboteur/master/cli/sab.
 
-Installing the agent
---------------------
-Currently the agent installs from an RPM only (DEB package to follow). It's only dependency is Python 2.6.6+, so if this is already installed you can install the RPM directly:
+Installing the agent and CLI
+----------------------------
+Saboteur's only dependency is Python 2.6.6+.
+
+To install from the RPM:
 
 ``
-    $ rpm -ivh https://github.com/tomakehurst/saboteur/releases/download/v0.5/saboteur-agent-0.5-1.noarch.rpm
+    $ rpm -ivh https://github.com/tomakehurst/saboteur/releases/download/v0.6/saboteur-0.6-1.noarch.rpm
+``
+
+And from the DEB package:
+
+``
+    $ wget -P /tmp https://github.com/tomakehurst/saboteur/releases/download/v0.6/saboteur_0.6_all.deb && dpkg --install /tmp/saboteur_0.6_all.deb
 ``
 
 After installation, start the agent daemon in the usual way:
@@ -31,6 +39,13 @@ After installation, start the agent daemon in the usual way:
 ``
     $ service saboteur-agent start
 ``
+
+Compatibility
+-------------
+So far I've verified that Saboteur works on Centos 6.4, Red Hat 6.4 and Ubuntu 12.10. It currently has some issues with the
+tc defaults on Fedora 18, so only the NETWORK_FAILURE, SERVICE_FAILURE and FIREWALL_TIMEOUT fault types work on that OS.
+
+I'd welcome any feedback about successes/failures on other distros or versions.
 
 
 Using the CLI
@@ -107,3 +122,9 @@ Saboteur keep track of rules it has created so that these can be targeted for re
 It's also likely that adding multiple DELAY and/or PACKET_LOSS rules will not work correctly.
 
 Fixes are coming for both of these issues.
+
+Finally, please don't use this in production (yet)! It's in no way secure, and would make an ideal attack vector for
+anyone wanting to DoS your site.
+
+I'm considering trying to make the agent secure enough to be used as a building block for a chaos monkey. Again, any
+feedback on the usefulness of this would be appreciated!
