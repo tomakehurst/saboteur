@@ -14,9 +14,9 @@ Currently these include:
 
 Currently it is Linux only, but support may be added for OSX in future.
 
-An RPM package is available for the agent. See [Releases](https://github.com/tomakehurst/saboteur/releases "Releases").
+RPM and DEB packages are available for the agent. See [Releases](https://github.com/tomakehurst/saboteur/releases "Releases").
 
-A CLI is also available as an RPM under releases, or you can just download and use it directly from source https://raw.github.com/tomakehurst/saboteur/master/cli/sab.
+A CLI is also available as an RPM under releases, or you can just download and use it directly from source https://raw.github.com/tomakehurst/saboteur/master/sab.
 
 Installing the agent and CLI
 ----------------------------
