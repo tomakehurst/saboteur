@@ -16,4 +16,4 @@ deb:
 	mv saboteur*.deb build
 
 test:
-	python tests/saboteur-tests.py
+	python -m saboteur.tests.saboteur-tests
