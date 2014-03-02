@@ -1,3 +1,10 @@
+import sys
+import os
+
+this_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(this_dir + '/../saboteur'))
+print(sys.path)
+
 from saboteur import SaboteurWebApp
 import json
 import unittest
