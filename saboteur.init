@@ -5,7 +5,7 @@ PIDFILE=/var/run/saboteur/agent.pid
 LOG=/var/log/saboteur/agent-error.log
 
 start_saboteur() {
-  nohup runuser - saboteur -s '/bin/sh' -c $DAEMON < /dev/null >> $LOG 2>&1 &
+  nohup su - saboteur -s '/bin/sh' -c $DAEMON < /dev/null >> $LOG 2>&1 &
   sleep 1
   PID=`ps -u saboteur | grep "python" | head -1 | awk '{print $1}'`
   if [ -z $PID ]; then
