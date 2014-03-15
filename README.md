@@ -107,7 +107,7 @@ To reset all faults, send a DELETE request to the root path e.g.
 
 Resilience testing Saboteur and JUnit
 -------------------------------------
-[Crash Lab](https://github.com/tomakehurst/crash-lab) is a Java library for automating resilience/stabilty type tests
+[Crash Lab](https://github.com/tomakehurst/crash-lab) is a Java library for automating resilience/stability type tests
 (or any scenario involving network faults), which has a Saboteur client as part of it, and
 [some examples](https://github.com/tomakehurst/crash-lab/blob/master/src/test/java/com/tomakehurst/crashlab/ExampleScenarios.java).
 
