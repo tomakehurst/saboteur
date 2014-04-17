@@ -1,4 +1,4 @@
-from saboteur.saboteur import SaboteurWebApp
+from saboteur.agent import SaboteurWebApp
 import json
 import unittest
 
