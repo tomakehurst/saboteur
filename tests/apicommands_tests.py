@@ -2,7 +2,7 @@ import unittest
 from saboteur.apicommands import build_command
 from saboteur.voluptuous import Invalid
 
-class TestApiCommands(unittest.TestCase):
+class TestBase(unittest.TestCase):
 
     def setUp(self):
         self.shell = MockShell()
@@ -25,10 +25,13 @@ class TestApiCommands(unittest.TestCase):
         except Invalid as e:
             self.assertEquals(expected_message, str(e.path[0]) + ": " + e.error_message)
 
+
+class TestBasicCommands(TestBase):
+
     def test_valid_basic_params(self):
         self.assertValid({
             'name': 'do-some-damage',
-            'type': 'FIREWALL_TIMEOUT',
+            'type': 'NETWORK_FAILURE',
             'direction': 'IN',
         })
 
@@ -45,6 +48,90 @@ class TestApiCommands(unittest.TestCase):
             'type': 'NETWORK_FAILURE',
             'direction': 'SIDEWAYS',
         }, "direction: SIDEWAYS is not one of ['IN', 'OUT']")
+
+class TestServiceFailure(TestBase):
+
+    def test_webserver_shut_down(self):
+        params = {
+            'name': "web-server-down",
+            'type': "SERVICE_FAILURE",
+            'direction': "IN",
+            'to_port': 8080,
+            'protocol': "TCP"
+        }
+        self.assertValidAndGeneratesShellCommand(params,
+            'sudo /sbin/iptables -A INPUT -p TCP -j REJECT --reject-with tcp-reset --dport 8080')
+
+
+class TestNetworkFailure(TestBase):
+
+    def test_isolate_webserver(self):
+        params = {
+            'name': 'isolate-web-server',
+            'type': 'NETWORK_FAILURE',
+            'direction': 'IN',
+            'to_port': 80,
+            'protocol': 'TCP'
+        }
+
+        self.assertValidAndGeneratesShellCommand(params, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 80')
+
+    def test_isolate_udp_server(self):
+        params = {
+            'name': "isolate-streaming-server",
+            'type': "NETWORK_FAILURE",
+            'direction': "IN",
+            'to_port': 8111,
+            'protocol': "UDP"
+        }
+        self.assertValidAndGeneratesShellCommand(params, 'sudo /sbin/iptables -A INPUT -p UDP -j DROP --dport 8111')
+
+    def test_client_dependency_unreachable(self):
+        params = {
+            'name': "connectivity-to-dependency-down",
+            'type': "NETWORK_FAILURE",
+            'direction': "OUT",
+            'to': 'my.dest.host.com',
+            'to_port': 443,
+            'protocol': "TCP"
+        }
+        self.assertValidAndGeneratesShellCommand(params, 'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP -d my.dest.host.com --dport 443')
+
+    def test_specifying_source(self):
+        params = {
+            'name': "network-failure-by-source-host",
+            'type': "NETWORK_FAILURE",
+            'direction': "IN",
+            'from': 'my.source.host.com',
+            'protocol': "TCP"
+        }
+        self.assertValidAndGeneratesShellCommand(params, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP -s my.source.host.com')
+
+class TestFirewallTimeout(TestBase):
+
+    def test_missing_timeout(self):
+        self.assertInvalid({
+            'name': 'effing-firewalls',
+            'type': 'FIREWALL_TIMEOUT',
+            'direction': 'IN'
+        }, "timeout: required key not provided")
+
+    def test_firewall_timeout(self):
+        params = {
+            'name': "network-failure-by-source-host",
+            'type': "FIREWALL_TIMEOUT",
+            'direction': "IN",
+            'to_port': 3000,
+            'protocol': "TCP",
+            'timeout': 101
+        }
+        self.assertValidAndGeneratesShellCommand(params,
+            'sudo /sbin/iptables -A INPUT -p TCP -j ACCEPT --dport 3000 -m conntrack --ctstate NEW,ESTABLISHED',
+            'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 3000',
+            'echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose',
+            'echo 101 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
+
+class TestDelay(TestBase):
 
     def test_invalid_delay_missing_delay(self):
         self.assertInvalid({
@@ -89,19 +176,119 @@ class TestApiCommands(unittest.TestCase):
             'probability': 'about half',
         }, "probability: expected float")
 
-
-    def test_isolate_webserver(self):
+    def test_normally_distributed_delay(self):
         params = {
-            'name': 'isolate-web-server',
-            'type': 'NETWORK_FAILURE',
+            'name': "normally-distributed-delay",
+            'type': "DELAY",
+            'direction': "IN",
+            'to_port': 4411,
+            'delay': 160,
+            'variance': 12,
+            'distribution': 'normal'}
+        self.shell.next_result = 'eth0\nvmnet8'
+        self.assertValidAndGeneratesShellCommand(params,
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 160ms 12ms distribution normal',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 4411 0xffff flowid 1:3',
+            'sudo /sbin/tc qdisc add dev vmnet8 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev vmnet8 parent 1:3 handle 11: netem delay 160ms 12ms distribution normal',
+            'sudo /sbin/tc filter add dev vmnet8 protocol ip parent 1:0 prio 3 u32 match ip sport 4411 0xffff flowid 1:3')
+
+    def test_pareto_distributed_delay(self):
+        params = {
+            'name': "pareto-distributed-delay",
+            'type': "DELAY",
+            'direction': "IN",
+            'to_port': 8822,
+            'delay': 350,
+            'variance': 50,
+            'distribution': 'pareto'}
+        self.shell.next_result = 'eth0'
+        self.assertValidAndGeneratesShellCommand(params,
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 350ms 50ms distribution pareto',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 8822 0xffff flowid 1:3')
+
+    def test_uniformly_distributed_delay(self):
+        params = {
+            'name': "uniformly-distributed-delay",
+            'type': "DELAY",
+            'direction': "IN",
+            'to_port': 8822,
+            'delay': 120,
+            'variance': 5,
+            'correlation': 25}
+        self.shell.next_result = 'eth0'
+        self.assertValidAndGeneratesShellCommand(params,
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 120ms 5ms 25%',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 8822 0xffff flowid 1:3')
+
+
+    def test_outbound_delay(self):
+        params = {
+            'name': "outbound-delay",
+            'type': "DELAY",
+            'direction': "OUT",
+            'to_port': 8822,
+            'delay': 350}
+        self.shell.next_result = 'eth0'
+        self.assertValidAndGeneratesShellCommand(params,
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 350ms',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip dport 8822 0xffff flowid 1:3')
+
+
+class TestPacketLoss(TestBase):
+
+    def test_invalid_probability(self):
+        self.assertInvalid({
+            'name': 'scatty',
+            'type': 'PACKET_LOSS',
             'direction': 'IN',
-            'to_port': 80,
-            'protocol': 'TCP'
-        }
+            'probability': 'very little',
+        }, "probability: expected float")
 
-        self.assertValidAndGeneratesShellCommand(params, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 80')
+    def test_invalid_correlation(self):
+        self.assertInvalid({
+            'name': 'scatty',
+            'type': 'PACKET_LOSS',
+            'direction': 'IN',
+            'correlation': 'what?',
+        }, "correlation: expected int")
 
+    def test_packet_loss(self):
+        params = {
+            'name': "packet-loss",
+            'type': "PACKET_LOSS",
+            'direction': "IN",
+            'to_port': 9191,
+            'probability': 0.3}
+        self.shell.next_result = 'eth0'
+        self.assertValidAndGeneratesShellCommand(params,
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.3%',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3')
 
+    def test_packet_loss_with_correlation(self):
+        params = {
+            'name': "packet-loss-with-correlation",
+            'type': "PACKET_LOSS",
+            'direction': "IN",
+            'to_port': 9191,
+            'probability': 0.2,
+            'correlation': 21}
+        self.shell.next_result = 'eth0'
+        self.assertValidAndGeneratesShellCommand(params,
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
+            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.2% 21%',
+            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3')
 
 class MockShell:
     def __init__(self, next_status=0, next_result="(nothing)"):

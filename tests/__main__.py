@@ -1,6 +1,6 @@
 import unittest
-from agent_tests import TestCommands
-from apicommands_tests import TestApiCommands
+from agent_tests import *
+from apicommands_tests import *
 
 if __name__ == '__main__':
     unittest.main()
