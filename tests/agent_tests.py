@@ -18,10 +18,12 @@ def request(method, params):
             'method': method,
             'body': json.dumps(params)}
 
+
 def http_request(method, params_json):
     return {'path': '/',
             'method': method,
             'body': params_json}
+
 
 class TestAgent(unittest.TestCase):
     def setUp(self):
@@ -41,7 +43,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 80')
 
     def test_invalid_json_returns_400(self):
-        params='{ "name": }'
+        params = '{ "name": }'
         response = self.app.handle(http_request('POST', params))
         self.assertEqual(400, response['status'])
         self.assertEqual(json.dumps('Not valid JSON'), response['body'])
@@ -54,11 +56,11 @@ class TestAgent(unittest.TestCase):
         response = self.app.handle(http_request('POST', params))
         self.assertEqual(400, response['status'])
         self.assertEqual(json.dumps({
-                "errors": {
-                    "type": "must be present and one of " + str(alphabetical_keys(FAULT_TYPES))
-                }
-            }),
-            response['body'])
+            "errors": {
+                "type": "must be present and one of " + str(alphabetical_keys(FAULT_TYPES))
+            }
+        }),
+                         response['body'])
 
     def test_fault_with_single_invalid_field_returns_400(self):
         params = json.dumps({
@@ -68,11 +70,11 @@ class TestAgent(unittest.TestCase):
         response = self.app.handle(http_request('POST', params))
         self.assertEqual(400, response['status'])
         self.assertEqual(json.dumps({
-                "errors": {
-                    "direction": "required key not provided"
-                }
-            }),
-            response['body'])
+            "errors": {
+                "direction": "required key not provided"
+            }
+        }),
+                         response['body'])
 
     def test_fault_with_multiple_invalid_fields_returns_400(self):
         params = json.dumps({
@@ -85,12 +87,12 @@ class TestAgent(unittest.TestCase):
         response = self.app.handle(http_request('POST', params))
         self.assertEqual(400, response['status'])
         self.assertEqual(json.dumps({
-                "errors": {
-                    "delay": "expected int",
-                    "probability": "expected float"
-                }
-            }),
-            response['body'])
+            "errors": {
+                "delay": "expected int",
+                "probability": "expected float"
+            }
+        }),
+                         response['body'])
 
     def test_reset(self):
         self.shell.next_result = 'eth1'
@@ -101,6 +103,7 @@ class TestAgent(unittest.TestCase):
             'sudo /sbin/iptables -F',
             "netstat -i | tail -n+3 | cut -f1 -d ' '",
             'sudo /sbin/tc qdisc del dev eth1 root'])
+
 
 class MockShell:
     def __init__(self, next_status=0, next_result="(nothing)"):
