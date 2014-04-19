@@ -50,39 +50,23 @@ I'd welcome any feedback about successes/failures on other distros or versions.
 
 Using the CLI
 -------------
-The command line interface supports three types of action:
-* Define a new client/service
-* Add a fault
-* Reset all faults
+The Saboteur package installs a CLI executable which can be used to configure and reset faults both locally and remotely.
+Typing ``sab`` without arguments (or with ``-h``) will display usage information.
 
-*Note: I'm not particularly keen on the defined client/service model for the CLI, so I'll probably change it to accept
-host, port and direction directly when adding faults*
-
-A client or service must first be defined before faults can be added or reset. You should define a client when the saboteur agent is running on the same host as client to a remote service. For instance if my application on host app01 connects to a database cluster on hosts db01 and db02 (listening on port 3306) and the saboteur agent is running on app01, I'd define a client:
+To create a new fault:
 
 ``
-    $ sab define-client db --hosts app01 --to_port 3306
+    $ sab add --fault_type NETWORK_FAILURE --to_port 8818 --direction IN --hosts myhost1,myhost2
 ``
 
-Then I can add some delay onto packets between my app and anything listening on port 3306:
+To remove all faults:
 
 ``
-    $ sab add db --fault_type DELAY --delay 200 --variance 50 --distribution normal
+    $ sab reset --hosts myhost1,myhost2
 ``
 
-When I want to put everything back to normal I can issue a reset:
+Note: omitting ``--hosts`` will cause commands to be sent to localhost.
 
-``
-    $ sab reset db
-``
-
-When running the saboteur agent on the host of the service being depended on, define a service instead. If the agent is running on the database hosts from the previous example, define the service this way:
-
-``
-    $ sab define-service db --hosts db01,db02 --to_port 3306
-``
-
-Typing ``sab -h`` prints detailed usage information.
 
 Using the HTTP API directly
 ---------------------------
@@ -96,7 +80,7 @@ Saboteur has a simple JSON over HTTP API. To add a new rule, simply POST to the 
     "correlation": 25 }' http://192.168.2.11:6660/
 ``
 
-See [saboteur-tests.py](https://github.com/tomakehurst/saboteur/blob/master/saboteur/tests/saboteur-tests.py "saboteur-tests.py")
+See [the tests](https://github.com/tomakehurst/saboteur/blob/master/tests/apicommands_tests.py "the tests")
 for more examples of valid commands.
 
 To reset all faults, send a DELETE request to the root path e.g.
