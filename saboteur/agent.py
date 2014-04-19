@@ -6,6 +6,8 @@ import json
 import BaseHTTPServer
 from subprocess import Popen, PIPE, call
 import logging
+from apicommands import build_command
+from voluptuous import Invalid
 
 class ValidationError(Exception):
 
@@ -134,11 +136,16 @@ class SaboteurWebApp:
         if request['method'] == 'POST':
             params=json.loads(request['body'])
             try:
-                validate(params)
-                run_shell_command('add', params, self.shell)
+                command=build_command(params)
+                command.validate()
+                command.execute(self.shell)
                 response={ 'status': 200, 'body': '{}' }
-            except ValidationError as ve:
-                response={ 'status': 400, 'body': json.dumps({ 'message': ve.message })}
+            except ValueError as ve:
+                response={ 'status': 400, 'body': json.dumps({ 'message': 'JSON could not be parsed' })}
+            except Invalid as ie:
+                response={ 'status': 400, 'body': json.dumps({ 'message': str(ie.path[0]) + ': ' + ie.error_message })}
+
+
         elif request['method'] == 'DELETE':
             command=IPTABLES_COMMAND + ' -F'
             self.shell.execute_and_return_status(command)

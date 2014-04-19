@@ -40,7 +40,7 @@ class TestBasicCommands(TestBase):
             'name': 'do-some-damage',
             'type': 'BAD_BALLOON',
             'direction': 'OUT',
-        }, "type: type must be present and one of ['DELAY', 'FIREWALL_TIMEOUT', 'NETWORK_FAILURE', 'PACKET_LOSS', 'SERVICE_FAILURE']")
+        }, "type: must be present and one of ['DELAY', 'FIREWALL_TIMEOUT', 'NETWORK_FAILURE', 'PACKET_LOSS', 'SERVICE_FAILURE']")
 
     def test_invalid_direction(self):
         self.assertInvalid({

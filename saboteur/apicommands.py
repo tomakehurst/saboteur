@@ -1,4 +1,4 @@
-from voluptuous import Schema, All, Required, Optional, Length, Invalid
+from voluptuous import Schema, All, Any, Required, Optional, Length, Invalid
 
 IPTABLES_COMMAND='sudo /sbin/iptables'
 DIRECTIONS={ 'IN': 'INPUT', 'OUT': 'OUTPUT' }
@@ -11,6 +11,8 @@ def is_in(value, values):
 
 def OneOf(values):
     return lambda v: is_in(v, values)
+
+string=Any(str, unicode)
 
 def get_network_interface_names(shell):
     exitcode, out, err=shell.execute("netstat -i | tail -n+3 | cut -f1 -d ' '")
@@ -136,7 +138,7 @@ class Delay(Fault):
     def extra_schema(self):
         return {
             Required('delay'): All(int),
-            Optional('distribution'): All(str),
+            Optional('distribution'): All(string),
             Optional('correlation'): All(int),
             Optional('variance'): All(int),
             Optional('probability'): All(float)
@@ -174,17 +176,17 @@ def alphabetical_keys(a_dict):
     return keys
 
 BASE_SCHEMA = {
-    Required('name'): All(str, Length(min=1)),
-    Required('type'): All(str, OneOf(alphabetical_keys(FAULT_TYPES))),
-    Required('direction'): All(str, OneOf(alphabetical_keys(DIRECTIONS))),
-    Optional('from'): All(str),
-    Optional('to'): All(str),
+    Required('name'): All(string, Length(min=1)),
+    Required('type'): All(string, OneOf(alphabetical_keys(FAULT_TYPES))),
+    Required('direction'): All(string, OneOf(alphabetical_keys(DIRECTIONS))),
+    Optional('from'): All(string),
+    Optional('to'): All(string),
     Optional('to_port'): All(int),
-    Optional('protocol'): All(str)
+    Optional('protocol'): All(string)
 }
 
 def build_command(params):
     if not params.has_key('type') or params['type'] not in FAULT_TYPES.keys():
-        message = 'type must be present and one of ' + str(alphabetical_keys(FAULT_TYPES))
+        message = 'must be present and one of ' + str(alphabetical_keys(FAULT_TYPES))
         raise Invalid(message, ['type'], message)
     return FAULT_TYPES[params['type']](params)

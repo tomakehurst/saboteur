@@ -82,7 +82,7 @@ class TestCommands(unittest.TestCase):
             'protocol': "TCP"
         }
         response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
+        self.assertEqual(response['status'], 200, response['body'])
         self.assertEqual(self.shell.last_command,
                          'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP -d my.dest.host.com --dport 443')
 
@@ -230,7 +230,7 @@ class TestCommands(unittest.TestCase):
         response_data = json.loads(response['body'])
 
         self.assertEqual(response['status'], 400)
-        self.assertEqual(response_data['message'], "'bad_field' is not a valid parameter")
+        self.assertEqual(response_data['message'], "type: must be present and one of ['DELAY', 'FIREWALL_TIMEOUT', 'NETWORK_FAILURE', 'PACKET_LOSS', 'SERVICE_FAILURE']")
 
     def test_missing_required_general_parameter(self):
         params = {'name': 'whatever', 'type': 'PACKET_LOSS'}
@@ -238,7 +238,7 @@ class TestCommands(unittest.TestCase):
         response_data = json.loads(response['body'])
 
         self.assertEqual(response['status'], 400)
-        self.assertEqual(response_data['message'], "'direction' is a required parameter")
+        self.assertEqual(response_data['message'], "direction: required key not provided")
 
     def test_invalid_fault_type(self):
         params = {
@@ -249,7 +249,7 @@ class TestCommands(unittest.TestCase):
         response_data = json.loads(response['body'])
 
         self.assertEqual(response['status'], 400)
-        self.assertEqual(response_data['message'], "'ATOMIC_BOMB' is not a valid fault type")
+        self.assertEqual(response_data['message'], "type: must be present and one of ['DELAY', 'FIREWALL_TIMEOUT', 'NETWORK_FAILURE', 'PACKET_LOSS', 'SERVICE_FAILURE']")
 
 
 class MockShell:
