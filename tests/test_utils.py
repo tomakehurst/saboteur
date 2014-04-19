@@ -12,6 +12,4 @@ class MockShell:
 
     def execute(self, command):
         self.commands.append(command)
-        if self.next_exit_code != 0:
-            raise ServerError(command + ' exited with ' + str(self.next_exit_code))
         return self.next_exit_code, self.next_result, ''

@@ -6,11 +6,8 @@ import json
 import BaseHTTPServer
 from subprocess import Popen, PIPE, call
 import logging
-from apicommands import build_add_fault_command, build_reset_command
+from apicommands import build_add_fault_command, build_reset_command, ServerError
 from voluptuous import MultipleInvalid
-
-class ServerError(Exception):
-    pass
 
 class Shell:
     
@@ -28,9 +25,6 @@ class Shell:
         if err:
             log.info(err)
 
-        if exitcode != 0:
-            raise ServerError(command + ' exited with ' + str(exitcode))
-
         return exitcode, out, err
         
 class SaboteurWebApp:
@@ -42,9 +36,9 @@ class SaboteurWebApp:
         if request['method'] == 'POST':
             try:
                 params=json.loads(request['body'])
-                command=build_add_fault_command(params)
+                command=build_add_fault_command(self.shell, params)
                 command.validate()
-                command.execute(self.shell)
+                command.execute()
                 response={ 'status': 200, 'body': '{}' }
             except ValueError as ve:
                 response={ 'status': 400, 'body': json.dumps('Not valid JSON') }
@@ -55,8 +49,8 @@ class SaboteurWebApp:
 
 
         elif request['method'] == 'DELETE':
-            command=build_reset_command()
-            command.execute(self.shell)
+            command=build_reset_command(self.shell)
+            command.execute()
             response={ 'status': 200 }
         
         return response

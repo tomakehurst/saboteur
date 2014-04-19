@@ -14,6 +14,9 @@ def OneOf(values):
 
 string=Any(str, unicode)
 
+class ServerError(Exception):
+    pass
+
 def get_network_interface_names(shell):
     exitcode, out, err=shell.execute("netstat -i | tail -n+3 | cut -f1 -d ' '")
     return out.split()
@@ -65,12 +68,28 @@ def base_iptables_command(action, parameters, fault_type):
 
     return command
 
-class Command:
-    def execute(self, shell):
-        pass
+class ShellErrorWrapper:
+    def __init__(self, shell):
+        self.shell = shell
 
+    def execute(self, command):
+        exitcode, out, err = self.shell.execute(command)
+        if exitcode != 0:
+            raise ServerError(command + ' exited with code ' + str(exitcode))
+
+        return exitcode, out, err
+
+class Command:
+    def __init__(self, shell):
+        self.shell = shell
+        self.safe_shell = ShellErrorWrapper(shell)
+
+    def execute(self):
+        pass
+    
 class Fault(Command):
-    def __init__(self, params):
+    def __init__(self, shell, params):
+        Command.__init__(self, shell)
         self.params=params
 
     def validate(self):
@@ -85,42 +104,43 @@ class Fault(Command):
         return {}
 
 class ServiceFailure(Fault):
-    def __init__(self, params):
-        Fault.__init__(self, params)
+    def __init__(self, shell, params):
+        Fault.__init__(self, shell, params)
 
-    def execute(self, shell):
+    def execute(self):
         command=base_iptables_command('add', self.params, 'REJECT --reject-with tcp-reset')
-        return shell.execute(command)
+        return self.safe_shell.execute(command)
 
 class NetworkFailure(Fault):
-    def __init__(self, params):
-        Fault.__init__(self, params)
+    def __init__(self, shell, params):
+        Fault.__init__(self, shell, params)
 
-    def execute(self, shell):
+    def execute(self):
         command=base_iptables_command('add', self.params, 'DROP')
-        return shell.execute(command)
+        return self.safe_shell.execute(command)
 
 
 class FirewallTimeout(Fault):
-    def __init__(self, params):
-        Fault.__init__(self, params)
+    def __init__(self, shell, params):
+        Fault.__init__(self, shell, params)
 
     def extra_schema(self):
         return {
             Required('timeout'): All(int)
         }
 
-    def execute(self, shell):
+    def execute(self):
         allow_conntrack_established_command=base_iptables_command('add', self.params, 'ACCEPT') + " -m conntrack --ctstate NEW,ESTABLISHED"
-        shell.execute(allow_conntrack_established_command)
+        self.safe_shell.execute(allow_conntrack_established_command)
         drop_others_command=base_iptables_command('add', self.params, 'DROP')
-        shell.execute(drop_others_command)
-        shell.execute('echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose')
-        shell.execute('echo ' + str(self.params['timeout']) + ' | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
+        self.safe_shell.execute(drop_others_command)
+        self.safe_shell.execute('echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose')
+        self.safe_shell.execute('echo ' + str(self.params['timeout']) + ' | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
+
 
 class Delay(Fault):
-    def __init__(self, params):
-        Fault.__init__(self, params)
+    def __init__(self, shell, params):
+        Fault.__init__(self, shell, params)
 
     def extra_schema(self):
         return {
@@ -131,14 +151,13 @@ class Delay(Fault):
             Optional('probability'): All(float)
         }
 
-    def execute(self, shell):
-        run_netem_commands(self.params, netem_delay_part(self.params), shell)
+    def execute(self):
+        run_netem_commands(self.params, netem_delay_part(self.params), self.safe_shell)
 
 
 class PacketLoss(Fault):
-
-    def __init__(self, params):
-        Fault.__init__(self, params)
+    def __init__(self, shell, params):
+        Fault.__init__(self, shell, params)
 
     def extra_schema(self):
         return {
@@ -146,15 +165,18 @@ class PacketLoss(Fault):
             Optional('correlation'): All(int)
         }
 
-    def execute(self, shell):
-        run_netem_commands(self.params, netem_packet_loss_part(self.params), shell)
+    def execute(self):
+        run_netem_commands(self.params, netem_packet_loss_part(self.params), self.safe_shell)
 
 
 class Reset(Command):
-    def execute(self, shell):
-        shell.execute(IPTABLES_COMMAND + ' -F')
-        for interface in get_network_interface_names(shell):
-            shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
+    def __init__(self, shell):
+        Command.__init__(self, shell)
+
+    def execute(self):
+        self.shell.execute(IPTABLES_COMMAND + ' -F')
+        for interface in get_network_interface_names(self.shell):
+            self.shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
 
 
 FAULT_TYPES={ 'NETWORK_FAILURE': NetworkFailure,
@@ -179,13 +201,13 @@ BASE_SCHEMA = {
     Optional('protocol'): All(string)
 }
 
-def build_add_fault_command(params):
+def build_add_fault_command(shell, params):
     if not params.has_key('type') or params['type'] not in FAULT_TYPES.keys():
         message = 'must be present and one of ' + str(alphabetical_keys(FAULT_TYPES))
         exception=MultipleInvalid()
         exception.add(Invalid(message, ['type'], message))
         raise exception
-    return FAULT_TYPES[params['type']](params)
+    return FAULT_TYPES[params['type']](shell, params)
 
-def build_reset_command():
-    return Reset()
+def build_reset_command(shell):
+    return Reset(shell)

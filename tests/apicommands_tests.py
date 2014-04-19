@@ -9,18 +9,18 @@ class TestBase(unittest.TestCase):
         self.shell = MockShell()
 
     def assertValidAndGeneratesShellCommand(self, params, *expected_shell_commands):
-        command = build_add_fault_command(params)
+        command = build_add_fault_command(self.shell, params)
         command.validate()
-        command.execute(self.shell)
+        command.execute()
         self.assertEqual(self.shell.commands, list(expected_shell_commands))
 
     def assertValid(self, params):
-        command = build_add_fault_command(params)
+        command = build_add_fault_command(self.shell, params)
         command.validate()
 
     def assertInvalid(self, params, expected_field, expected_message):
         try:
-            command = build_add_fault_command(params)
+            command = build_add_fault_command(self.shell, params)
             command.validate()
             raise AssertionError("Expected validation error: " + expected_message)
         except Invalid as e:
