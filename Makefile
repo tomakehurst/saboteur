@@ -4,6 +4,8 @@ VERSION = 0.7
 .PHONY: clean rpm deb test
 
 clean:
+	-rm -rf tests/*.pyc
+	-rm -rf saboteur/*.pyc
 	-rm -rf $(BUILDDIR)
 
 rpm:

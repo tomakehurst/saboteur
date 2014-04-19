@@ -7,7 +7,9 @@ import BaseHTTPServer
 from subprocess import Popen, PIPE, call
 import logging
 from apicommands import build_command
-from voluptuous import Invalid, MultipleInvalid
+from voluptuous import MultipleInvalid
+
+IPTABLES_COMMAND='sudo /sbin/iptables'
 
 class Shell:
     
@@ -58,7 +60,6 @@ class SaboteurWebApp:
                 response={ 'status': 400, 'body': json.dumps('Not valid JSON')}
             except MultipleInvalid as ie:
                 response={ 'status': 400, 'body': json.dumps({ 'errors': dict(map(lambda err: [str(err.path[0]), err.error_message], ie.errors))}) }
-                # response={ 'status': 400, 'body': json.dumps({ 'message': str(ie.path[0]) + ': ' + ie.error_message })}
 
 
         elif request['method'] == 'DELETE':
