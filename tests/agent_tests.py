@@ -1,6 +1,7 @@
 from saboteur.agent import SaboteurWebApp
 import json
 import unittest
+from saboteur.apicommands import FAULT_TYPES, alphabetical_keys
 
 
 def post_request(params):
@@ -17,239 +18,80 @@ def request(method, params):
             'method': method,
             'body': json.dumps(params)}
 
+def http_request(method, params_json):
+    return {'path': '/',
+            'method': method,
+            'body': params_json}
 
-class TestCommands(unittest.TestCase):
+class TestAgent(unittest.TestCase):
     def setUp(self):
         self.shell = MockShell()
         self.app = SaboteurWebApp(self.shell)
 
-    def test_isolate_webserver(self):
-        params = {
+    def test_successful_iptables_based_fault_returns_200_and_executes_correct_command(self):
+        params = json.dumps({
             'name': 'isolate-web-server',
             'type': 'NETWORK_FAILURE',
             'direction': 'IN',
             'to_port': 80,
             'protocol': 'TCP'
-        }
-        response = self.app.handle(post_request(params))
+        })
+        response = self.app.handle(http_request('POST', params))
         self.assertEqual(response['status'], 200)
         self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 80')
 
-    def test_reset(self):
-        self.shell.next_result = 'eth1'
-
-        response = self.app.handle(delete_request())
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.commands, [
-            'sudo /sbin/iptables -F',
-            "netstat -i | tail -n+3 | cut -f1 -d ' '",
-            'sudo /sbin/tc qdisc del dev eth1 root'])
-
-    def test_isolate_udp_server(self):
-        params = {
-            'name': "isolate-streaming-server",
-            'type': "NETWORK_FAILURE",
-            'direction': "IN",
-            'to_port': 8111,
-            'protocol': "UDP"
-        }
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p UDP -j DROP --dport 8111')
-
-
-    def test_webserver_shut_down(self):
-        params = {
-            'name': "web-server-down",
-            'type': "SERVICE_FAILURE",
-            'direction': "IN",
-            'to_port': 8080,
-            'protocol': "TCP"
-        }
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.last_command,
-                         'sudo /sbin/iptables -A INPUT -p TCP -j REJECT --reject-with tcp-reset --dport 8080')
-
-
-    def test_client_dependency_unreachable(self):
-        params = {
-            'name': "connectivity-to-dependency-down",
-            'type': "NETWORK_FAILURE",
-            'direction': "OUT",
-            'to': 'my.dest.host.com',
-            'to_port': 443,
-            'protocol': "TCP"
-        }
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200, response['body'])
-        self.assertEqual(self.shell.last_command,
-                         'sudo /sbin/iptables -A OUTPUT -p TCP -j DROP -d my.dest.host.com --dport 443')
-
-
-    def test_specifying_source(self):
-        params = {
-            'name': "network-failure-by-source-host",
-            'type': "NETWORK_FAILURE",
-            'direction': "IN",
-            'from': 'my.source.host.com',
-            'protocol': "TCP"
-        }
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.last_command, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP -s my.source.host.com')
-
-    def test_firewall_timeout(self):
-        params = {
-            'name': "network-failure-by-source-host",
-            'type': "FIREWALL_TIMEOUT",
-            'direction': "IN",
-            'to_port': 3000,
-            'protocol': "TCP",
-            'timeout': 101
-        }
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.commands, [
-            'sudo /sbin/iptables -A INPUT -p TCP -j ACCEPT --dport 3000 -m conntrack --ctstate NEW,ESTABLISHED',
-            'sudo /sbin/iptables -A INPUT -p TCP -j DROP --dport 3000',
-            'echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose',
-            'echo 101 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established'])
-
-
-    def test_normally_distributed_delay(self):
-        params = {
-            'name': "normally-distributed-delay",
-            'type': "DELAY",
-            'direction': "IN",
-            'to_port': 4411,
-            'delay': 160,
-            'variance': 12,
-            'distribution': 'normal'}
-        self.shell.next_result = 'eth0\nvmnet8'
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.commands, [
-            "netstat -i | tail -n+3 | cut -f1 -d ' '",
-            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
-            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 160ms 12ms distribution normal',
-            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 4411 0xffff flowid 1:3',
-            'sudo /sbin/tc qdisc add dev vmnet8 root handle 1: prio',
-            'sudo /sbin/tc qdisc add dev vmnet8 parent 1:3 handle 11: netem delay 160ms 12ms distribution normal',
-            'sudo /sbin/tc filter add dev vmnet8 protocol ip parent 1:0 prio 3 u32 match ip sport 4411 0xffff flowid 1:3'])
-
-    def test_pareto_distributed_delay(self):
-        params = {
-            'name': "pareto-distributed-delay",
-            'type': "DELAY",
-            'direction': "IN",
-            'to_port': 8822,
-            'delay': 350,
-            'variance': 50,
-            'distribution': 'pareto'}
-        self.shell.next_result = 'eth0'
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.commands, [
-            "netstat -i | tail -n+3 | cut -f1 -d ' '",
-            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
-            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 350ms 50ms distribution pareto',
-            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 8822 0xffff flowid 1:3'])
-
-    def test_uniformly_distributed_delay(self):
-        params = {
-            'name': "uniformly-distributed-delay",
-            'type': "DELAY",
-            'direction': "IN",
-            'to_port': 8822,
-            'delay': 120,
-            'variance': 5,
-            'correlation': 25}
-        self.shell.next_result = 'eth0'
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.commands, [
-            "netstat -i | tail -n+3 | cut -f1 -d ' '",
-            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
-            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 120ms 5ms 25%',
-            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 8822 0xffff flowid 1:3'])
-
-
-    def test_outbound_delay(self):
-        params = {
-            'name': "outbound-delay",
-            'type': "DELAY",
-            'direction': "OUT",
-            'to_port': 8822,
-            'delay': 350}
-        self.shell.next_result = 'eth0'
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.commands, [
-            "netstat -i | tail -n+3 | cut -f1 -d ' '",
-            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
-            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem delay 350ms',
-            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip dport 8822 0xffff flowid 1:3'])
-
-    def test_packet_loss(self):
-        params = {
-            'name': "packet-loss",
-            'type': "PACKET_LOSS",
-            'direction': "IN",
-            'to_port': 9191,
-            'probability': 0.3}
-        self.shell.next_result = 'eth0'
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.commands, [
-            "netstat -i | tail -n+3 | cut -f1 -d ' '",
-            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
-            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.3%',
-            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3'])
-
-    def test_packet_loss_with_correlation(self):
-        params = {
-            'name': "packet-loss-with-correlation",
-            'type': "PACKET_LOSS",
-            'direction': "IN",
-            'to_port': 9191,
-            'probability': 0.2,
-            'correlation': 21}
-        self.shell.next_result = 'eth0'
-        response = self.app.handle(post_request(params))
-        self.assertEqual(response['status'], 200)
-        self.assertEqual(self.shell.commands, [
-            "netstat -i | tail -n+3 | cut -f1 -d ' '",
-            'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
-            'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.2% 21%',
-            'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3'])
-
-    def test_invalid_parameter_key(self):
-        params = {'bad_field': 5}
-        response = self.app.handle(post_request(params))
-        response_data = json.loads(response['body'])
-
-        self.assertEqual(response['status'], 400)
-        self.assertEqual(response_data['message'], "type: must be present and one of ['DELAY', 'FIREWALL_TIMEOUT', 'NETWORK_FAILURE', 'PACKET_LOSS', 'SERVICE_FAILURE']")
-
-    def test_missing_required_general_parameter(self):
-        params = {'name': 'whatever', 'type': 'PACKET_LOSS'}
-        response = self.app.handle(post_request(params))
-        response_data = json.loads(response['body'])
-
-        self.assertEqual(response['status'], 400)
-        self.assertEqual(response_data['message'], "direction: required key not provided")
+    def test_invalid_json_returns_400(self):
+        params='{ "name": }'
+        response = self.app.handle(http_request('POST', params))
+        self.assertEqual(400, response['status'])
+        self.assertEqual(json.dumps('Not valid JSON'), response['body'])
 
     def test_invalid_fault_type(self):
-        params = {
-            'name': "no-chance",
-            'type': "ATOMIC_BOMB",
-            'direction': "IN"}
-        response = self.app.handle(post_request(params))
-        response_data = json.loads(response['body'])
+        params = json.dumps({
+            'name': 'isolate-web-server',
+            'type': 'WORMS'
+        })
+        response = self.app.handle(http_request('POST', params))
+        self.assertEqual(400, response['status'])
+        self.assertEqual(json.dumps({
+                "errors": {
+                    "type": "must be present and one of " + str(alphabetical_keys(FAULT_TYPES))
+                }
+            }),
+            response['body'])
 
-        self.assertEqual(response['status'], 400)
-        self.assertEqual(response_data['message'], "type: must be present and one of ['DELAY', 'FIREWALL_TIMEOUT', 'NETWORK_FAILURE', 'PACKET_LOSS', 'SERVICE_FAILURE']")
+    def test_fault_with_single_invalid_field_returns_400(self):
+        params = json.dumps({
+            'name': 'isolate-web-server',
+            'type': 'NETWORK_FAILURE'
+        })
+        response = self.app.handle(http_request('POST', params))
+        self.assertEqual(400, response['status'])
+        self.assertEqual(json.dumps({
+                "errors": {
+                    "direction": "required key not provided"
+                }
+            }),
+            response['body'])
+
+    def test_fault_with_multiple_invalid_fields_returns_400(self):
+        params = json.dumps({
+            'name': 'isolate-web-server',
+            'type': 'DELAY',
+            'direction': 'IN',
+            'delay': 'bad',
+            'probability': 'worse'
+        })
+        response = self.app.handle(http_request('POST', params))
+        self.assertEqual(400, response['status'])
+        self.assertEqual(json.dumps({
+                "errors": {
+                    "delay": "expected int",
+                    "probability": "expected float"
+                }
+            }),
+            response['body'])
+
 
 
 class MockShell:

@@ -1,4 +1,4 @@
-from voluptuous import Schema, All, Any, Required, Optional, Length, Invalid
+from voluptuous import Schema, All, Any, Required, Optional, Length, MultipleInvalid, Invalid
 
 IPTABLES_COMMAND='sudo /sbin/iptables'
 DIRECTIONS={ 'IN': 'INPUT', 'OUT': 'OUTPUT' }
@@ -188,5 +188,7 @@ BASE_SCHEMA = {
 def build_command(params):
     if not params.has_key('type') or params['type'] not in FAULT_TYPES.keys():
         message = 'must be present and one of ' + str(alphabetical_keys(FAULT_TYPES))
-        raise Invalid(message, ['type'], message)
+        exception=MultipleInvalid()
+        exception.add(Invalid(message, ['type'], message))
+        raise exception
     return FAULT_TYPES[params['type']](params)

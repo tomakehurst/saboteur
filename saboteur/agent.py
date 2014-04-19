@@ -7,7 +7,7 @@ import BaseHTTPServer
 from subprocess import Popen, PIPE, call
 import logging
 from apicommands import build_command
-from voluptuous import Invalid
+from voluptuous import Invalid, MultipleInvalid
 
 class ValidationError(Exception):
 
@@ -57,6 +57,7 @@ def reset_tc(shell=Shell()):
     for interface in get_network_interface_names(shell):
         shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
 
+
 class SaboteurWebApp:
 
     def __init__(self, shell=Shell()):
@@ -64,16 +65,17 @@ class SaboteurWebApp:
     
     def handle(self, request):
         if request['method'] == 'POST':
-            params=json.loads(request['body'])
             try:
+                params=json.loads(request['body'])
                 command=build_command(params)
                 command.validate()
                 command.execute(self.shell)
                 response={ 'status': 200, 'body': '{}' }
             except ValueError as ve:
-                response={ 'status': 400, 'body': json.dumps({ 'message': 'JSON could not be parsed' })}
-            except Invalid as ie:
-                response={ 'status': 400, 'body': json.dumps({ 'message': str(ie.path[0]) + ': ' + ie.error_message })}
+                response={ 'status': 400, 'body': json.dumps('Not valid JSON')}
+            except MultipleInvalid as ie:
+                response={ 'status': 400, 'body': json.dumps({ 'errors': dict(map(lambda err: [str(err.path[0]), err.error_message], ie.errors))}) }
+                # response={ 'status': 400, 'body': json.dumps({ 'message': str(ie.path[0]) + ': ' + ie.error_message })}
 
 
         elif request['method'] == 'DELETE':
