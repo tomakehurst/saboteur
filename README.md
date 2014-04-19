@@ -25,13 +25,13 @@ Saboteur's only dependency is Python 2.6.6+.
 To install from the RPM:
 
 ``
-    $ rpm -ivh https://github.com/tomakehurst/saboteur/releases/download/v0.6/saboteur-0.6-1.noarch.rpm
+    $ rpm -ivh https://github.com/tomakehurst/saboteur/releases/download/v0.7/saboteur-0.7-1.noarch.rpm
 ``
 
 And from the DEB package:
 
 ``
-    $ wget -P /tmp https://github.com/tomakehurst/saboteur/releases/download/v0.6/saboteur_0.6_all.deb && dpkg --install /tmp/saboteur_0.6_all.deb
+    $ wget -P /tmp https://github.com/tomakehurst/saboteur/releases/download/v0.7/saboteur_0.7_all.deb && dpkg --install /tmp/saboteur_0.7_all.deb
 ``
 
 After installation, start the agent daemon in the usual way:
