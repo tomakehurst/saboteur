@@ -65,6 +65,10 @@ if len(sys.argv) < 2:
     option_parser.print_help()
     sys.exit(2)
 
+if len(args) < 1:
+    print("Error: action required. Valid options: " + str(ACTIONS.keys()))
+    sys.exit(2)
+
 action=args[0]
 print("action: "+ action)
 
