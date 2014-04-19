@@ -18,18 +18,6 @@ def get_network_interface_names(shell):
     exitcode, out, err=shell.execute("netstat -i | tail -n+3 | cut -f1 -d ' '")
     return out.split()
 
-def run_netem_commands2(action, parameters, shell):
-    for interface in get_network_interface_names(shell):
-        delay_part=netem_delay_part(parameters) if parameters['type'] == 'DELAY' else ''
-        packet_loss_part=netem_packet_loss_part(parameters) if parameters['type'] == 'PACKET_LOSS' else ''
-
-        port=str(parameters['to_port'])
-        port_type={ 'IN': 'sport', 'OUT': 'dport' }[parameters['direction']]
-
-        shell.execute('sudo /sbin/tc qdisc add dev ' + interface + ' root handle 1: prio')
-        shell.execute('sudo /sbin/tc qdisc add dev ' + interface + ' parent 1:3 handle 11:' + delay_part + packet_loss_part)
-        shell.execute('sudo /sbin/tc filter add dev ' + interface + ' protocol ip parent 1:0 prio 3 u32 match ip ' + port_type + ' ' + port + ' 0xffff flowid 1:3')
-
 def run_netem_commands(parameters, fault_part, shell):
     for interface in get_network_interface_names(shell):
         port=str(parameters['to_port'])
