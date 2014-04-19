@@ -1,4 +1,5 @@
 import unittest
+from test_utils import MockShell
 from saboteur.apicommands import build_add_fault_command
 from saboteur.voluptuous import Invalid
 
@@ -302,25 +303,6 @@ class TestPacketLoss(TestBase):
             'sudo /sbin/tc qdisc add dev eth0 root handle 1: prio',
             'sudo /sbin/tc qdisc add dev eth0 parent 1:3 handle 11: netem loss 0.2% 21%',
             'sudo /sbin/tc filter add dev eth0 protocol ip parent 1:0 prio 3 u32 match ip sport 9191 0xffff flowid 1:3')
-
-class MockShell:
-    def __init__(self, next_status=0, next_result="(nothing)"):
-        self.next_status = next_status
-        self.next_result = next_result
-        self.commands = []
-
-    @property
-    def last_command(self):
-        return self.commands[-1]
-
-    def execute(self, command):
-        self.commands.append(command)
-        return 0, self.next_result, ''
-
-    def execute_and_return_status(self, command):
-        self.commands.append(command)
-        return self.next_status
-
 
 if __name__ == '__main__':
     unittest.main()

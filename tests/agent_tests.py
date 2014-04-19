@@ -1,6 +1,7 @@
 from saboteur.agent import SaboteurWebApp
 import json
 import unittest
+from test_utils import MockShell
 from saboteur.apicommands import FAULT_TYPES, alphabetical_keys
 
 
@@ -106,22 +107,18 @@ class TestAgent(unittest.TestCase):
             "netstat -i | tail -n+3 | cut -f1 -d ' '",
             'sudo /sbin/tc qdisc del dev eth1 root'])
 
+    def test_returns_500_when_shell_command_exits_with_non_zero(self):
+        params = json.dumps({
+            'name': 'whatever',
+            'type': 'NETWORK_FAILURE',
+            'direction': 'IN',
+            'to_port': 80,
+            'protocol': 'TCP'
+        })
 
-class MockShell:
-    def __init__(self, next_status=0, next_result="(nothing)"):
-        self.next_status = next_status
-        self.next_result = next_result
-        self.commands = []
-
-    def execute(self, command):
-        self.last_command = command
-        self.commands.append(command)
-        return 0, self.next_result, ''
-
-    def execute_and_return_status(self, command):
-        self.commands.append(command)
-        self.last_command = command
-        return self.next_status
+        self.shell.next_exit_code = 1
+        response = self.app.handle(http_request('POST', params))
+        self.assertEqual(500, response['status'])
 
 
 if __name__ == '__main__':

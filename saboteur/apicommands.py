@@ -43,12 +43,12 @@ def netem_packet_loss_part(parameters):
 
 def run_firewall_timeout_commands(action, parameters, shell):
     allow_conntrack_established_command=base_iptables_command(action, parameters, 'ACCEPT') + " -m conntrack --ctstate NEW,ESTABLISHED"
-    shell.execute_and_return_status(allow_conntrack_established_command)
+    shell.execute(allow_conntrack_established_command)
     drop_others_command=base_iptables_command(action, parameters, 'DROP')
-    shell.execute_and_return_status(drop_others_command)
+    shell.execute(drop_others_command)
     if action == 'add':
-        shell.execute_and_return_status('echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose')
-        shell.execute_and_return_status('echo ' + str(parameters['timeout']) + ' | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
+        shell.execute('echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose')
+        shell.execute('echo ' + str(parameters['timeout']) + ' | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
 
 
 def base_iptables_command(action, parameters, fault_type):
@@ -90,7 +90,7 @@ class ServiceFailure(Fault):
 
     def execute(self, shell):
         command=base_iptables_command('add', self.params, 'REJECT --reject-with tcp-reset')
-        return shell.execute_and_return_status(command)
+        return shell.execute(command)
 
 class NetworkFailure(Fault):
     def __init__(self, params):
@@ -98,7 +98,7 @@ class NetworkFailure(Fault):
 
     def execute(self, shell):
         command=base_iptables_command('add', self.params, 'DROP')
-        return shell.execute_and_return_status(command)
+        return shell.execute(command)
 
 
 class FirewallTimeout(Fault):
@@ -112,11 +112,11 @@ class FirewallTimeout(Fault):
 
     def execute(self, shell):
         allow_conntrack_established_command=base_iptables_command('add', self.params, 'ACCEPT') + " -m conntrack --ctstate NEW,ESTABLISHED"
-        shell.execute_and_return_status(allow_conntrack_established_command)
+        shell.execute(allow_conntrack_established_command)
         drop_others_command=base_iptables_command('add', self.params, 'DROP')
-        shell.execute_and_return_status(drop_others_command)
-        shell.execute_and_return_status('echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose')
-        shell.execute_and_return_status('echo ' + str(self.params['timeout']) + ' | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
+        shell.execute(drop_others_command)
+        shell.execute('echo 0 | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_loose')
+        shell.execute('echo ' + str(self.params['timeout']) + ' | sudo tee /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established')
 
 class Delay(Fault):
     def __init__(self, params):
@@ -152,7 +152,7 @@ class PacketLoss(Fault):
 
 class Reset(Command):
     def execute(self, shell):
-        shell.execute_and_return_status(IPTABLES_COMMAND + ' -F')
+        shell.execute(IPTABLES_COMMAND + ' -F')
         for interface in get_network_interface_names(shell):
             shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
 

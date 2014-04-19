@@ -9,6 +9,9 @@ import logging
 from apicommands import build_add_fault_command, build_reset_command
 from voluptuous import MultipleInvalid
 
+class ServerError(Exception):
+    pass
+
 class Shell:
     
     def execute(self, command):
@@ -24,14 +27,12 @@ class Shell:
 
         if err:
             log.info(err)
-        
+
+        if exitcode != 0:
+            raise ServerError(command + ' exited with ' + str(exitcode))
+
         return exitcode, out, err
         
-    def execute_and_return_status(self, command):
-        exit_code=call(command, shell=True)
-        log.info('"' + command + '" returned ' + str(exit_code))
-        return exit_code
-
 class SaboteurWebApp:
 
     def __init__(self, shell=Shell()):
@@ -46,9 +47,11 @@ class SaboteurWebApp:
                 command.execute(self.shell)
                 response={ 'status': 200, 'body': '{}' }
             except ValueError as ve:
-                response={ 'status': 400, 'body': json.dumps('Not valid JSON')}
+                response={ 'status': 400, 'body': json.dumps('Not valid JSON') }
             except MultipleInvalid as ie:
                 response={ 'status': 400, 'body': json.dumps({ 'errors': dict(map(lambda err: [str(err.path[0]), err.error_message], ie.errors))}) }
+            except ServerError as se:
+                response = { 'status': 500, 'body': json.dumps('Failed to execute a shell command on the server. See the /var/log/saboteur/agent-error.log for details.') }
 
 
         elif request['method'] == 'DELETE':
