@@ -9,14 +9,6 @@ import logging
 from apicommands import build_command
 from voluptuous import Invalid, MultipleInvalid
 
-class ValidationError(Exception):
-
-    def __init__(self, message):
-        self.message=message
-        
-    def __str__(self):
-        return self.message
-
 class Shell:
     
     def execute(self, command):
@@ -39,15 +31,6 @@ class Shell:
         exit_code=call(command, shell=True)
         log.info('"' + command + '" returned ' + str(exit_code))
         return exit_code
-
-ALL_PARAMETER_KEYS=['name', 'type', 'direction', 'from', 'to_port', 'to', 'protocol', 'timeout', 'delay', 'variance', 'correlation', 'distribution', 'probability']
-REQUIRED_KEYS=['name', 'type', 'direction']
-ALL_FAULT_TYPES=['NETWORK_FAILURE', 'SERVICE_FAILURE', 'FIREWALL_TIMEOUT', 'DELAY', 'PACKET_LOSS']
-
-DIRECTIONS={ 'IN': 'INPUT', 'OUT': 'OUTPUT' }
-ACTIONS={ 'add': '-A',  'delete': '-D' }
-FAULT_TYPES={ "NETWORK_FAILURE": "DROP", "SERVICE_FAILURE": "REJECT --reject-with tcp-reset", 'FIREWALL_TIMEOUT': 'DROP' }
-IPTABLES_COMMAND='sudo /sbin/iptables'
 
 def get_network_interface_names(shell=Shell()):
     exitcode, out, err=shell.execute("netstat -i | tail -n+3 | cut -f1 -d ' '")
