@@ -17,13 +17,14 @@ class TestBase(unittest.TestCase):
         command = build_command(params)
         command.validate()
 
-    def assertInvalid(self, params, expected_message):
+    def assertInvalid(self, params, expected_field, expected_message):
         try:
             command = build_command(params)
             command.validate()
             raise AssertionError("Expected validation error: " + expected_message)
         except Invalid as e:
-            self.assertEquals(expected_message, str(e.path[0]) + ": " + e.error_message)
+            self.assertEqual(expected_field, str(e.path[0]));
+            self.assertEquals(expected_message, e.error_message)
 
 
 class TestBasicCommands(TestBase):
@@ -40,14 +41,17 @@ class TestBasicCommands(TestBase):
             'name': 'do-some-damage',
             'type': 'BAD_BALLOON',
             'direction': 'OUT',
-        }, "type: must be present and one of ['DELAY', 'FIREWALL_TIMEOUT', 'NETWORK_FAILURE', 'PACKET_LOSS', 'SERVICE_FAILURE']")
+        }, "type", "must be present and one of ['DELAY', 'FIREWALL_TIMEOUT', 'NETWORK_FAILURE', 'PACKET_LOSS', 'SERVICE_FAILURE']")
 
     def test_invalid_direction(self):
         self.assertInvalid({
             'name': 'do-some-damage',
             'type': 'NETWORK_FAILURE',
             'direction': 'SIDEWAYS',
-        }, "direction: SIDEWAYS is not one of ['IN', 'OUT']")
+        }, "direction", "SIDEWAYS is not one of ['IN', 'OUT']")
+
+
+
 
 class TestServiceFailure(TestBase):
 
@@ -114,7 +118,7 @@ class TestFirewallTimeout(TestBase):
             'name': 'effing-firewalls',
             'type': 'FIREWALL_TIMEOUT',
             'direction': 'IN'
-        }, "timeout: required key not provided")
+        }, "timeout", "required key not provided")
 
     def test_firewall_timeout(self):
         params = {
@@ -138,7 +142,7 @@ class TestDelay(TestBase):
             'name': 'lagtastic',
             'type': 'DELAY',
             'direction': 'IN'
-        }, "delay: required key not provided")
+        }, 'delay', "required key not provided")
 
     def test_invalid_delay_distribution(self):
         self.assertInvalid({
@@ -147,7 +151,7 @@ class TestDelay(TestBase):
             'direction': 'IN',
             'delay': 120,
             'distribution': 1,
-        }, "distribution: expected str")
+        }, "distribution", "expected str")
 
     def test_invalid_delay_correlation(self):
         self.assertInvalid({
@@ -156,7 +160,7 @@ class TestDelay(TestBase):
             'direction': 'IN',
             'delay': 120,
             'correlation': 'something',
-        }, "correlation: expected int")
+        }, "correlation", "expected int")
 
     def test_invalid_delay_variance(self):
         self.assertInvalid({
@@ -165,7 +169,7 @@ class TestDelay(TestBase):
             'direction': 'IN',
             'delay': 120,
             'variance': 'variable',
-        }, "variance: expected int")
+        }, "variance", "expected int")
 
     def test_invalid_delay_probability(self):
         self.assertInvalid({
@@ -174,7 +178,7 @@ class TestDelay(TestBase):
             'direction': 'IN',
             'delay': 120,
             'probability': 'about half',
-        }, "probability: expected float")
+        }, "probability", "expected float")
 
     def test_normally_distributed_delay(self):
         params = {
@@ -251,7 +255,7 @@ class TestPacketLoss(TestBase):
             'type': 'PACKET_LOSS',
             'direction': 'IN',
             'probability': 'very little',
-        }, "probability: expected float")
+        }, "probability", "expected float")
 
     def test_invalid_correlation(self):
         self.assertInvalid({
@@ -259,7 +263,7 @@ class TestPacketLoss(TestBase):
             'type': 'PACKET_LOSS',
             'direction': 'IN',
             'correlation': 'what?',
-        }, "correlation: expected int")
+        }, "correlation", "expected int")
 
     def test_packet_loss(self):
         params = {
