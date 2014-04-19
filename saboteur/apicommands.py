@@ -173,9 +173,9 @@ BASE_SCHEMA = {
     Required('name'): All(string, Length(min=1)),
     Required('type'): All(string, OneOf(alphabetical_keys(FAULT_TYPES))),
     Required('direction'): All(string, OneOf(alphabetical_keys(DIRECTIONS))),
+    Required('to_port'): All(int),
     Optional('from'): All(string),
     Optional('to'): All(string),
-    Optional('to_port'): All(int),
     Optional('protocol'): All(string)
 }
 

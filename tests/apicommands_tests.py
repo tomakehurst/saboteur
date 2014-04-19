@@ -34,6 +34,7 @@ class TestBasicFaultCommands(TestBase):
             'name': 'do-some-damage',
             'type': 'NETWORK_FAILURE',
             'direction': 'IN',
+            'to_port': 8080
         })
 
     def test_invalid_type(self):
@@ -50,7 +51,12 @@ class TestBasicFaultCommands(TestBase):
             'direction': 'SIDEWAYS',
         }, "direction", "SIDEWAYS is not one of ['IN', 'OUT']")
 
-
+    def test_invalid_to_port(self):
+        self.assertInvalid({
+            'name': 'do-some-damage',
+            'type': 'NETWORK_FAILURE',
+            'direction': 'IN'
+        }, "to_port", "required key not provided")
 
 
 class TestServiceFailure(TestBase):
@@ -107,9 +113,10 @@ class TestNetworkFailure(TestBase):
             'type': "NETWORK_FAILURE",
             'direction': "IN",
             'from': 'my.source.host.com',
-            'protocol': "TCP"
+            'protocol': "TCP",
+            'to_port': 8111
         }
-        self.assertValidAndGeneratesShellCommand(params, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP -s my.source.host.com')
+        self.assertValidAndGeneratesShellCommand(params, 'sudo /sbin/iptables -A INPUT -p TCP -j DROP -s my.source.host.com --dport 8111')
 
 class TestFirewallTimeout(TestBase):
 
@@ -117,7 +124,8 @@ class TestFirewallTimeout(TestBase):
         self.assertInvalid({
             'name': 'effing-firewalls',
             'type': 'FIREWALL_TIMEOUT',
-            'direction': 'IN'
+            'direction': 'IN',
+            'to_port': 8111
         }, "timeout", "required key not provided")
 
     def test_firewall_timeout(self):
@@ -141,7 +149,8 @@ class TestDelay(TestBase):
         self.assertInvalid({
             'name': 'lagtastic',
             'type': 'DELAY',
-            'direction': 'IN'
+            'direction': 'IN',
+            'to_port': 7878
         }, 'delay', "required key not provided")
 
     def test_invalid_delay_distribution(self):

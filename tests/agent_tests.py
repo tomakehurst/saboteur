@@ -65,7 +65,8 @@ class TestAgent(unittest.TestCase):
     def test_fault_with_single_invalid_field_returns_400(self):
         params = json.dumps({
             'name': 'isolate-web-server',
-            'type': 'NETWORK_FAILURE'
+            'type': 'NETWORK_FAILURE',
+            'to_port': 7871
         })
         response = self.app.handle(http_request('POST', params))
         self.assertEqual(400, response['status'])
@@ -81,6 +82,7 @@ class TestAgent(unittest.TestCase):
             'name': 'isolate-web-server',
             'type': 'DELAY',
             'direction': 'IN',
+            'to_port': 7871,
             'delay': 'bad',
             'probability': 'worse'
         })
