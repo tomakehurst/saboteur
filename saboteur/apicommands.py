@@ -65,18 +65,17 @@ def base_iptables_command(action, parameters, fault_type):
 
     return command
 
+class Command:
+    def execute(self, shell):
+        pass
 
-class Fault:
-
+class Fault(Command):
     def __init__(self, params):
         self.params=params
 
     def validate(self):
         schema=self.build_schema()
         schema(self.params)
-
-    def execute(self, shell):
-        pass
 
     def build_schema(self):
         combined_schema=dict(BASE_SCHEMA.items() + self.extra_schema().items())
@@ -151,6 +150,13 @@ class PacketLoss(Fault):
         run_netem_commands(self.params, netem_packet_loss_part(self.params), shell)
 
 
+class Reset(Command):
+    def execute(self, shell):
+        shell.execute_and_return_status(IPTABLES_COMMAND + ' -F')
+        for interface in get_network_interface_names(shell):
+            shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
+
+
 FAULT_TYPES={ 'NETWORK_FAILURE': NetworkFailure,
               'SERVICE_FAILURE': ServiceFailure,
               'FIREWALL_TIMEOUT': FirewallTimeout,
@@ -173,10 +179,13 @@ BASE_SCHEMA = {
     Optional('protocol'): All(string)
 }
 
-def build_command(params):
+def build_add_fault_command(params):
     if not params.has_key('type') or params['type'] not in FAULT_TYPES.keys():
         message = 'must be present and one of ' + str(alphabetical_keys(FAULT_TYPES))
         exception=MultipleInvalid()
         exception.add(Invalid(message, ['type'], message))
         raise exception
     return FAULT_TYPES[params['type']](params)
+
+def build_reset_command():
+    return Reset()

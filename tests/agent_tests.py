@@ -92,7 +92,15 @@ class TestAgent(unittest.TestCase):
             }),
             response['body'])
 
+    def test_reset(self):
+        self.shell.next_result = 'eth1'
 
+        response = self.app.handle(delete_request())
+        self.assertEqual(response['status'], 200)
+        self.assertEqual(self.shell.commands, [
+            'sudo /sbin/iptables -F',
+            "netstat -i | tail -n+3 | cut -f1 -d ' '",
+            'sudo /sbin/tc qdisc del dev eth1 root'])
 
 class MockShell:
     def __init__(self, next_status=0, next_result="(nothing)"):

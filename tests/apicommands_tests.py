@@ -1,5 +1,5 @@
 import unittest
-from saboteur.apicommands import build_command
+from saboteur.apicommands import build_add_fault_command
 from saboteur.voluptuous import Invalid
 
 class TestBase(unittest.TestCase):
@@ -8,18 +8,18 @@ class TestBase(unittest.TestCase):
         self.shell = MockShell()
 
     def assertValidAndGeneratesShellCommand(self, params, *expected_shell_commands):
-        command = build_command(params)
+        command = build_add_fault_command(params)
         command.validate()
         command.execute(self.shell)
         self.assertEqual(self.shell.commands, list(expected_shell_commands))
 
     def assertValid(self, params):
-        command = build_command(params)
+        command = build_add_fault_command(params)
         command.validate()
 
     def assertInvalid(self, params, expected_field, expected_message):
         try:
-            command = build_command(params)
+            command = build_add_fault_command(params)
             command.validate()
             raise AssertionError("Expected validation error: " + expected_message)
         except Invalid as e:
@@ -27,7 +27,7 @@ class TestBase(unittest.TestCase):
             self.assertEquals(expected_message, e.error_message)
 
 
-class TestBasicCommands(TestBase):
+class TestBasicFaultCommands(TestBase):
 
     def test_valid_basic_params(self):
         self.assertValid({

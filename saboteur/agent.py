@@ -6,10 +6,8 @@ import json
 import BaseHTTPServer
 from subprocess import Popen, PIPE, call
 import logging
-from apicommands import build_command
+from apicommands import build_add_fault_command, build_reset_command
 from voluptuous import MultipleInvalid
-
-IPTABLES_COMMAND='sudo /sbin/iptables'
 
 class Shell:
     
@@ -34,15 +32,6 @@ class Shell:
         log.info('"' + command + '" returned ' + str(exit_code))
         return exit_code
 
-def get_network_interface_names(shell=Shell()):
-    exitcode, out, err=shell.execute("netstat -i | tail -n+3 | cut -f1 -d ' '")
-    return out.split()
-
-def reset_tc(shell=Shell()):
-    for interface in get_network_interface_names(shell):
-        shell.execute('sudo /sbin/tc qdisc del dev ' + interface + ' root')
-
-
 class SaboteurWebApp:
 
     def __init__(self, shell=Shell()):
@@ -52,7 +41,7 @@ class SaboteurWebApp:
         if request['method'] == 'POST':
             try:
                 params=json.loads(request['body'])
-                command=build_command(params)
+                command=build_add_fault_command(params)
                 command.validate()
                 command.execute(self.shell)
                 response={ 'status': 200, 'body': '{}' }
@@ -63,9 +52,8 @@ class SaboteurWebApp:
 
 
         elif request['method'] == 'DELETE':
-            command=IPTABLES_COMMAND + ' -F'
-            self.shell.execute_and_return_status(command)
-            reset_tc(self.shell)
+            command=build_reset_command()
+            command.execute(self.shell)
             response={ 'status': 200 }
         
         return response
